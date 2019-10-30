@@ -1,19 +1,13 @@
-################################################################################################################################
+
 # Edited version of "datacleaning.clean.R" by Kaija Gahm, 11 Aug 2018 (p 4, 8, 13)
 # Edited version of "datacleaning.26ilror.clean.R" by Kaija Gahm, 20 Aug 2018 (p 26, ilr, or)
-#
-# 
 # output: two .Rda files of cleaned data: 1) "all_reduced_clean.Rda" (p4,8,13) and 2) "all2_reduced_clean.Rda" (p26, ilr, or)
-#
 
-########################################################
-# Functions and Libraries
+## Load functions and libraries
 source("Analysis/R_scripts/ownfunctions.R")
 source("Analysis/R_scripts/libraries.R")
-#######################################################
 
-#######################################################
-# Load data
+## Load data
 load("Analysis/data/data1/fish_data_EF.Rda") # Fish sampling data
 sites_p4p8p13 <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/sites_p4p8p13.txt") # reprojected data
 rivmi <- read.table("Analysis/data/p4p8p13_rivmile.txt", sep = ",", header = T) # river mile data
@@ -23,14 +17,11 @@ terrestrial_forests <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/Terr
 sites_forest <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/sites_forest.txt") # nearest forest info for each point
 lc_2010 <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/lc_2010.txt") # 2010 landcover info
 
-
-
-
-# Add a `year` column to fish_data_EF
+## Clean data
+### Add 'year' column
 fish_data_EF$year <- str_extract(as.character(fish_data_EF$sdate), pattern = "[:digit:]+$")
 
-# Join river miles to the sites_p4p8p13 data
-# Join the river mile data
+### Join river miles
 sites_p4p8p13 <- left_join(sites_p4p8p13, rivmi[,c("RIVER_MILE", "TARGET_FID")], by = c("FID" = "TARGET_FID"))
 # We're only going to use sites_p4p8p13 for the river mile data; all other columns are already present in sites_aa_5m. 
 
@@ -46,12 +37,12 @@ sites_aa_5m$pool <- fish_data_EF$pool[rows]
 #reorder the columns so that barcode is first                                      
 sites_aa_5m <- sites_aa_5m[,c(1:4, 71, 5:70)]   
 
-# join river miles
+# join river miles to sites_aa_5m
 sites_aa_5m <- dplyr::left_join(sites_aa_5m, sites_p4p8p13[,c("barcode", "RIVER_MILE")], by = "barcode")
 # Ok, now we're done with sites_p4p8p13
 
 # "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". I'd like these to have values of NA, not 0. 
-badrows_5 <- sites_aa_5m  %>% filter(Perimeter == 0, Area == 0, avg_fetch ==0)
+badrows_5 <- sites_aa_5m  %>% filter(Perimeter == 0, Area == 0, avg_fetch == 0)
 dim(badrows_5)
 
 # Remove the bad rows
@@ -61,7 +52,7 @@ dim(sites_aa_5m)
 # Where do we have missing values?
 locate.nas(sites_aa_5m)
 
-#there are a concerning number of NA's in the `pool` column that shouldn't be there. Luckily, the `uniq_id` column tells us which pool these are from. 
+# there are a concerning number of NA's in the `pool` column that shouldn't be there. Luckily, the `uniq_id` column tells us which pool these are from. 
 addpools <- function(df){
   pools <- as.numeric(substr(x = as.character(df$uniq_id), 
                              start = 2, 
@@ -118,9 +109,9 @@ sites_aa_5m <- sites_aa_5m %>% filter(NEAR_TERR_CLASS_7 != "Ag")
 # Check that we've excluded any data before 1993
 table(sites_aa_5m$year, exclude = NULL) # looks good
 
-#=========================================
+
 # Reducing the variables
-#=========================================
+
 # Exclude variables that we aren't going to use
 names(sites_aa_5m)
 excl1 <- c("OBJECTID", "aa_num", "AQUA_CODE", "AQUA_DESC", "Area", "Acres", "Hectares", "bath_pct", "sd_depth", "area_gt50", "area_gt100", "area_gt200", "area_gt300", "avg_fetch", "econ", "sill", "min_rm", "max_rm", "len_met", "len_outl", "pct_outl", "num_outl", "len_oute", "pct_oute", "num_oute", "pct_aqveg", "pct_opwat", "len_terr", "pct_chan", "len_wetf", "len_wd", "wdl_p_m2", "num_wd", "sco_wd", "psco_wd", "len_revln", "rev_p_m2", "num_rev", "pct_rev", "pct_rev2", "area_tpi1", "pct_tpi1", "area_tpi2", "pct_tpi2", "area_tpi3", "pct_tpi3", "area_tpi4", "pct_tpi4", "sinuosity", "year_phot", "NEAR_TERR_FID", "NEAR_FOREST_FID", "sitetype", "gear", "Join_Count", "FID", "TARGET_FID", "Field1", "pct2wetf", "trib")
@@ -163,11 +154,8 @@ dim(all_reduced_clean)
 # Export dataset
 save(all_reduced_clean, file = "data/all_reduced_clean.Rda")
 
-##########################################################################
-#
 # Part II: pools 26, La grange, and Open River
 # 
-##########################################################################
 
 # Load files
 load("data/DataSets_8_17/ltrm_fish_data_new.Rda") # Fish sampling data - made by MVA 10/31/18 by importing csv "ltrm_fish_data.csv" and exporting as Rda
@@ -255,9 +243,8 @@ table(sites_aa_5m$NEAR_TERR_CLASS_7_N)
 # Check that we've excluded any data before 1993
 table(sites_aa_5m$year, exclude = NULL) # looks good
 
-#=========================================
+
 # Reducing the variables
-#=========================================
 # Exclude variables that we aren't going to use
 names(sites_aa_5m)
 excl1 <- c("OBJECTID", "aa_num", "AQUA_CODE", "AQUA_DESC", "Area", "Acres", "Hectares", "bath_pct", "sd_depth", "area_gt50", "area_gt100", "area_gt200", "area_gt300", "avg_fetch", "econ", "sill", "min_rm", "max_rm", "len_met", "len_outl", "pct_outl", "num_outl", "len_oute", "pct_oute", "num_oute", "pct_aqveg", "pct_opwat", "len_terr", "pct_chan", "len_wetf", "len_wd", "wdl_p_m2", "num_wd", "sco_wd", "psco_wd", "len_revln", "rev_p_m2", "num_rev", "pct_rev", "pct_rev2", "area_tpi1", "pct_tpi1", "area_tpi2", "pct_tpi2", "area_tpi3", "pct_tpi3", "area_tpi4", "pct_tpi4", "sinuosity", "year_phot", "NEAR_TERR_FID", "NEAR_FOREST_FID", "sitetype", "gear", "Join_Count", "FID", "TARGET_FID", "RowID_", "pct2wetf", "trib")
