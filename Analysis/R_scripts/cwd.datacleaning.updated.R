@@ -8,7 +8,7 @@ source("Analysis/R_scripts/ownfunctions.R")
 source("Analysis/R_scripts/libraries.R")
 
 ## Load data
-load("Analysis/data/data1/fish_data_EF.Rda") # Fish sampling data
+load("Analysis/data/fish_data_EF.Rda") # Fish sampling data
 sites_p4p8p13 <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/sites_p4p8p13.txt") # reprojected data
 rivmi <- read.table("Analysis/data/p4p8p13_rivmile.txt", sep = ",", header = T) # river mile data
 sites_aa_5m <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/sites_aquaareas5m.txt") # merged aquatic areas data for points buffered by 5 meters.
@@ -18,28 +18,32 @@ sites_forest <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/sites_fores
 lc_2010 <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/lc_2010.txt") # 2010 landcover info
 
 ## Clean data
-### Add 'year' column
-fish_data_EF$year <- str_extract(as.character(fish_data_EF$sdate), pattern = "[:digit:]+$")
+### sites_aa_5m is going to be the main dataset that we're working with. We need to add site barcodes, pools, and river miles.
+### To add river mile data, we have to go via sites_p4p8p13.
 
-### Join river miles
-sites_p4p8p13 <- left_join(sites_p4p8p13, rivmi[,c("RIVER_MILE", "TARGET_FID")], by = c("FID" = "TARGET_FID"))
-# We're only going to use sites_p4p8p13 for the river mile data; all other columns are already present in sites_aa_5m. 
+### Join river miles to sites_p4p8p13.
+sites_p4p8p13 %<>% rename(siteid = FID)
+rivmi %<>% rename(siteid = TARGET_FID) 
+rivmi_reduced <- rivmi %>% select(siteid, RIVER_MILE)
+sites <- left_join(sites_p4p8p13, rivmi_reduced, by = "siteid")
 
-# Join barcodes from `fish_data_EF` to `sites_p4p8p13` (the reprojected data)
-rows <- sites_p4p8p13$Field1 # `Field 1` in this dataset corresonds to the row number in fish_data_EF.
-sites_p4p8p13$barcode <- fish_data_EF$barcode[rows] # Select the barcodes we want and add them as a column to sites_p4p8p13
-# This will allow for a join with sites_aa_5m. 
+### Join barcodes to sites_p4p8p13. This will allow for a join with sites_aa_5m.
+sites %<>% rename(fishdata_rownum = Field1) # the Field1 column in this dataset corresponds to the row number in fish_data_EF.
+rows <- sites$fishdata_rownum # get vector of fish data row numbers in the order they appear in the sites data.
+sites$barcode <- fish_data_EF$barcode[rows] # add barcodes
 
-# Join barcodes and pools for sites_aa_5m
+### Join barcodes and pools for sites_aa_5m
 sites_aa_5m$barcode <- fish_data_EF$barcode[rows]
+
+### use barcode matching to join river miles into sites_aa_5m. 
+sites_aa_5m <- left_join(sites_aa_5m, sites[,c("barcode", "RIVER_MILE")], by = "barcode")
+### Ok, now we're done with the sites data frame.
+
+### Add pool information
 sites_aa_5m$pool <- fish_data_EF$pool[rows]
 
 #reorder the columns so that barcode is first                                      
 sites_aa_5m <- sites_aa_5m[,c(1:4, 71, 5:70)]   
-
-# join river miles to sites_aa_5m
-sites_aa_5m <- dplyr::left_join(sites_aa_5m, sites_p4p8p13[,c("barcode", "RIVER_MILE")], by = "barcode")
-# Ok, now we're done with sites_p4p8p13
 
 # "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". I'd like these to have values of NA, not 0. 
 badrows_5 <- sites_aa_5m  %>% filter(Perimeter == 0, Area == 0, avg_fetch == 0)
