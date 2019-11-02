@@ -91,20 +91,20 @@ addpools <- function(df){
   return(df)
 }
 sites_aa_5m <- addpools(sites_aa_5m)
-locate.nas(sites_aa_5m)
+locate.nas(sites_aa_5m) # we still have some NA's for "snag", but that is to be expected. 
 ```
 
 ## Join environmental info
 ### Terrestrial areas
 ```{r}
-# `Field 1` in this dataset corresponds to the FID in the terrestrial areas dataset. 
-rows_5 <- sites_aa_5m$Field1 
+# terrestrial data to join
+terr_tojoin <- sites_terrestrial %>% select(NEAR_FID, NEAR_DIST, Field1)
+sites_aa_5m <- left_join(sites_aa_5m, terr_tojoin, by = "Field1") %>% rename(NEAR_TERR_FID = NEAR_FID,
+                                                                             NEAR_TERR_DIST = NEAR_DIST)
+
+# The is the join that I think I was trying to do originally. It assumes that Field1 in sites_terrestrial is equivalent to Field1 in sites_aa_5m. Need to check that this is right.
 
 # ID of nearest terrestrial region
-sites_aa_5m$NEAR_TERR_FID <- sites_terrestrial$NEAR_FID[sites_terrestrial$Field1 %in% rows_5] 
-
-# Distance to nearest terrestrial region
-sites_aa_5m$NEAR_TERR_DIST <- sites_terrestrial$NEAR_DIST[sites_terrestrial$Field1 %in% rows_5]
 ```
 
 
