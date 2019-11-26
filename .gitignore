@@ -11,3 +11,13 @@
 # Mac files
 *.DS_Store
 
+# Shapefiles
+*.CPG
+*.dbf
+*.prj
+*.sbn
+*.sbx
+*.shp
+*.shp.xml
+*.shx
+
