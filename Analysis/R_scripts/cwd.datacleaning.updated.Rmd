@@ -15,7 +15,7 @@ source("ownfunctions.R")
 source("libraries.R")
 ```
 
-## Load data
+# Load data (Upper River-- 4, 8, 13)
 ```{r}
 load("../data/outputs/fish_data_EF.Rda") 
   # Fish sampling data
@@ -184,6 +184,20 @@ all_reduced <- all_reduced %>% filter(stratum != "UXO")
 ### Remove pseudo-shoreline observations
 ```{r}
 all_reduced <- all_reduced %>% filter(summary != "7") # a code of 7 in the summary column means that the observations are pseudo-shoreline and should be excluded.
+```
+
+# Load data (Lower River-- 26, La Grange, Open River)
+```{r}
+# Load files
+load("../data/inputs/DataSets_8_17/") # Fish sampling data - made by MVA 10/31/18 by importing csv "ltrm_fish_data.csv" and exporting as Rda
+#ltrm_fish_data <- read.csv("data/DataSets_8_17/ltrm_fish_data.csv",sep=",",header=TRUE)
+ #save(ltrm_fish_data,file="data/DataSets_8_17/ltrm_fish_data_new.Rda")
+sites_p26ilror <- read.csv("data/DataSets_8_17/AttributeTables/sites_p26ilror.txt") # reprojected data
+sites_aa_5m <- read.csv("data/DataSets_8_17/AttributeTables/sites_aquaareas5m2.txt") # merged aquatic areas data for points buffered by 5 meters.
+sites_terrestrial <- read.csv("data/DataSets_8_17/AttributeTables/sites_terrestrial2.txt") # nearest terrestrial area info for each point
+terrestrial_forests <- read.csv("data/DataSets_8_17/AttributeTables/Terrestrial_Forests2.txt") # info about terrestrial areas/forests
+sites_forest <- read.csv("data/DataSets_8_17/AttributeTables/sites_forest2.txt") # nearest forest info for each point
+lc_2010 <- read.csv("data/DataSets_8_17/AttributeTables/lc_20102.txt") # landcover info
 ```
 
 
