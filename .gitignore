@@ -21,3 +21,4 @@
 *.shp.xml
 *.shx
 
+.Rproj.user
