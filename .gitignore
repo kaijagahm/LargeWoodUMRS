@@ -22,3 +22,4 @@
 *.shx
 
 .Rproj.user
+.Rproj.user/

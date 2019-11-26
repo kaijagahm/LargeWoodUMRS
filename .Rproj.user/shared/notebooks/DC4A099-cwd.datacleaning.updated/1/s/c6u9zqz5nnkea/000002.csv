@@ -1,8 +1,0 @@
-"0","# To add river mile data, we have to go via sites_p4p8p13 because of the correspondence between object codes in GIS."
-"0","# Identify corresponding columns"
-"0","sites_p4p8p13 %<>% rename(siteid = FID)"
-"0","rivmi %<>% rename(siteid = TARGET_FID) "
-"0","# Select columns of river miles data frame to prepare for join"
-"0","rivmi_reduced <- rivmi %>% select(siteid, RIVER_MILE)"
-"0","# Perform join"
-"0","sites <- left_join(sites_p4p8p13, rivmi_reduced, by = ""siteid"")"
