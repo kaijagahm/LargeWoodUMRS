@@ -125,3 +125,15 @@ sites_aa_5m <- left_join(sites_aa_5m, forest_tojoin, by = "Field1") %>%
          NEAR_FOREST_DIST = NEAR_DIST) # distance to nearest forested area
 ```
 
+## Join site info from fish survey
+```{r}
+# Add a `year` column
+fish_data_EF <- fish_data_EF %>% mutate(year = str_extract(sdate, "[[:digit:]]{4}$"))
+
+# Site-level information to join
+fish_tojoin <- fish_data_EF %>% select(year, sitetype, gear, wingdyke, riprap, trib, barcode) %>% distinct()
+
+# Join
+sites_aa_5m <- left_join(sites_aa_5m, fish_tojoin, by = "barcode") 
+```
+
