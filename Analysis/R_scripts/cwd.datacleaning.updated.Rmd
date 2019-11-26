@@ -17,21 +17,21 @@ source("libraries.R")
 
 ## Load data
 ```{r}
-load("../data/fish_data_EF.Rda") 
+load("../data/outputs/fish_data_EF.Rda") 
   # Fish sampling data
-sites_p4p8p13 <- read.csv("../data/DataSets_7_7/AttributeTables/sites_p4p8p13.txt") 
+sites_p4p8p13 <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_p4p8p13.txt") 
   # reprojected data
-rivmi <- read.table("../data/p4p8p13_rivmile.txt", sep = ",", header = T) 
+rivmi <- read.table("../data/inputs/p4p8p13_rivmile.txt", sep = ",", header = T) 
   # river mile data
-sites_aa_5m <- read.csv("../data/DataSets_7_7/AttributeTables/sites_aquaareas5m.txt") 
+sites_aa_5m <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_aquaareas5m.txt") 
   # merged aquatic areas data for points buffered by 5 meters.
-sites_terrestrial <- read.csv("../data/DataSets_7_7/AttributeTables/sites_terrestrial.txt") 
+sites_terrestrial <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_terrestrial.txt") 
   # nearest terrestrial area info for each point
-terrestrial_forests <- read.csv("../data/DataSets_7_7/AttributeTables/Terrestrial_Forests.txt") 
+terrestrial_forests <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/Terrestrial_Forests.txt") 
   # info about terrestrial areas/forests
-sites_forest <- read.csv("../data/DataSets_7_7/AttributeTables/sites_forest.txt") 
+sites_forest <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_forest.txt") 
   # nearest forest info for each point
-lc_2010 <- read.csv("../data/DataSets_7_7/AttributeTables/lc_2010.txt") 
+lc_2010 <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/lc_2010.txt") 
   # 2010 landcover info
 ```
 
@@ -95,17 +95,26 @@ locate.nas(sites_aa_5m) # we still have some NA's for "snag", but that is to be 
 ```
 
 ## Join environmental info
-### Terrestrial areas
+### Distance to terrestrial areas
 ```{r}
 # terrestrial data to join
 terr_tojoin <- sites_terrestrial %>% select(NEAR_FID, NEAR_DIST, Field1)
-sites_aa_5m <- left_join(sites_aa_5m, terr_tojoin, by = "Field1") %>% rename(NEAR_TERR_FID = NEAR_FID,
-                                                                             NEAR_TERR_DIST = NEAR_DIST)
+sites_aa_5m <- left_join(sites_aa_5m, terr_tojoin, by = "Field1") %>% 
+  rename(NEAR_TERR_FID = NEAR_FID, # ID of nearest terrestrial region
+         NEAR_TERR_DIST = NEAR_DIST) # distance to nearest terrestrial region
 
 # The is the join that I think I was trying to do originally. It assumes that Field1 in sites_terrestrial is equivalent to Field1 in sites_aa_5m. Need to check that this is right.
 
 # ID of nearest terrestrial region
 ```
 
+### Info about nearest terrestrial region
+```{r}
+# We're going to pull terrestrial areas information columns from `lc_2010`, not from `terrestrial`, because the FID's don't match up in `terrestrial`.
+terrinfo_tojoin <- lc_2010 %>% select(FID, CLASS_7_C, CLASS_7_N)
+sites_aa_5m <- left_join(sites_aa_5m, terrinfo_tojoin, by = c("NEAR_TERR_FID" = "FID")) %>%
+  rename(NEAR_TERR_CLASS_7 = CLASS_7_C,
+         NEAR_TERR_CLASS_7_N = CLASS_7_N) # join the columns and rename appropriately
+```
 
 Make changes to the script
