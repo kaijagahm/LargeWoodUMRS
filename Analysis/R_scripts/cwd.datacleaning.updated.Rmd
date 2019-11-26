@@ -131,9 +131,59 @@ sites_aa_5m <- left_join(sites_aa_5m, forest_tojoin, by = "Field1") %>%
 fish_data_EF <- fish_data_EF %>% mutate(year = str_extract(sdate, "[[:digit:]]{4}$"))
 
 # Site-level information to join
-fish_tojoin <- fish_data_EF %>% select(year, sitetype, gear, wingdyke, riprap, trib, barcode) %>% distinct()
+fish_tojoin <- fish_data_EF %>% select(year, sitetype, gear, wingdyke, riprap, trib, barcode, summary) %>% distinct()
 
 # Join
 sites_aa_5m <- left_join(sites_aa_5m, fish_tojoin, by = "barcode") 
 ```
+
+## Cleaning
+### Exclude variables
+```{r}
+toexclude <- c("OBJECTID", "aa_num", "AQUA_CODE", "AQUA_DESC", "Area", "Acres", "Hectares", "bath_pct", "sd_depth", "area_gt50", "area_gt100", "area_gt200", "area_gt300", "avg_fetch", "econ", "sill", "min_rm", "max_rm", "len_met", "len_outl", "pct_outl", "num_outl", "len_oute", "pct_oute", "num_oute", "pct_aqveg", "pct_opwat", "len_terr", "pct_chan", "len_wetf", "len_wd", "wdl_p_m2", "num_wd", "sco_wd", "psco_wd", "len_revln", "rev_p_m2", "num_rev", "pct_rev", "pct_rev2", "area_tpi1", "pct_tpi1", "area_tpi2", "pct_tpi2", "area_tpi3", "pct_tpi3", "area_tpi4", "pct_tpi4", "sinuosity", "year_phot", "NEAR_TERR_FID", "NEAR_FOREST_FID", "sitetype", "gear", "Join_Count", "FID", "TARGET_FID", "Field1", "pct2wetf", "trib")
+
+all_reduced <- sites_aa_5m %>% select(-toexclude)
+names(all_reduced)
+```
+
+### Change some names
+```{r}
+# Change some names
+all_reduced <- all_reduced %>% rename(perimeter = Perimeter,
+                                      shoreline_density_index = sdi,
+                                      pct_prm_wetf = pct1wetf,
+                                      river_mile = RIVER_MILE,
+                                      near_terr_dist = NEAR_TERR_DIST,
+                                      near_terr_class_7 = NEAR_TERR_CLASS_7,
+                                      near_terr_name = NEAR_TERR_CLASS_7_N,
+                                      near_forest_dist = NEAR_FOREST_DIST)
+```
+
+### Replace -999 etc. with NA
+```{r}
+factors <- all_reduced %>% select_if(., is.factor) %>% names()
+
+colstomodify <- all_reduced %>% select(-factors) %>% select(-barcode) %>% names()
+               
+for(i in colstomodify){
+  all_reduced[,i][all_reduced[,i] < -5000] <- NA
+}                                   
+```
+
+### Search for NA's
+```{r}
+locate.nas(all_reduced)
+# These seem fine
+```
+
+### Exclude UXO
+```{r}
+all_reduced <- all_reduced %>% filter(stratum != "UXO")
+```
+
+### Remove pseudo-shoreline observations
+```{r}
+all_reduced <- all_reduced %>% filter(summary != "7") # a code of 7 in the summary column means that the observations are pseudo-shoreline and should be excluded.
+```
+
 
