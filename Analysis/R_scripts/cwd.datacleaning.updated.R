@@ -75,11 +75,12 @@ sites_aa_5m$NEAR_TERR_DIST <- sites_terrestrial$NEAR_DIST[sites_terrestrial$Fiel
 # Add information about nearest terrestrial areas
 # We're going to pull terrestrial areas information columns from `lc_2010`, not from `terrestrial`, because the FID's don't match up in `terrestrial`.
 columns_terr <- lc_2010[, c("FID", "CLASS_7_C", "CLASS_7_N")] # define which columns we want (class 7 names and codes)
-sites_aa_5m <- left_join(sites_aa_5m, columns_terr, by = c("NEAR_TERR_FID" = "FID")) # join the columns
+sites_aa_5m <- left_join(sites_aa_5m, columns_terr, by = c("NEAR_TERR_FID" = "FID")) %>%
+  rename(NEAR_TERR_CLASS_7 = CLASS_7_C,
+         NEAR_TERR_CLASS_7_N = CLASS_7_N) # join the columns and rename appropriately
 
 #change column names to indicate that these columns refer to the landcover type of the nearest terrestrial area.
-sites_aa_5m <- sites_aa_5m %>% dplyr::rename(NEAR_TERR_CLASS_7 = CLASS_7_C,
-                                             NEAR_TERR_CLASS_7_N = CLASS_7_N)
+
 
 # Add columns for *distance* to nearest forested area
 sites_aa_5m$NEAR_FOREST_FID <- sites_forest$NEAR_FID[sites_forest$Field1 %in% rows_5] # which forested region is the closest?
