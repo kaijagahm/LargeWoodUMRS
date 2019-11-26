@@ -117,4 +117,11 @@ sites_aa_5m <- left_join(sites_aa_5m, terrinfo_tojoin, by = c("NEAR_TERR_FID" = 
          NEAR_TERR_CLASS_7_N = CLASS_7_N) # join the columns and rename appropriately
 ```
 
-Make changes to the script
+### Distance to forested areas
+```{r}
+forest_tojoin <- sites_forest %>% select(Field1, NEAR_FID, NEAR_DIST)
+sites_aa_5m <- left_join(sites_aa_5m, forest_tojoin, by = "Field1") %>% 
+  rename(NEAR_FOREST_FID = NEAR_FID, # which forested area is the closest
+         NEAR_FOREST_DIST = NEAR_DIST) # distance to nearest forested area
+```
+
