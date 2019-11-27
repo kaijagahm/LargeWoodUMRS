@@ -163,7 +163,7 @@ save(all_reduced_clean, file = "data/all_reduced_clean.Rda")
 # 
 
 # Load files
-load("data/DataSets_8_17/ltrm_fish_data_new.Rda") # Fish sampling data - made by MVA 10/31/18 by importing csv "ltrm_fish_data.csv" and exporting as Rda
+load("data/DataSets_8_17/ltrm_fish_data_new.Rda") # Fish sampling data - made by MVA 10/31/18 by importing csv "ltrm_fish_data.csv" and exporting as Rda. # 11/26/19: could not locate this file.
 #ltrm_fish_data <- read.csv("data/DataSets_8_17/ltrm_fish_data.csv",sep=",",header=TRUE)
  #save(ltrm_fish_data,file="data/DataSets_8_17/ltrm_fish_data_new.Rda")
 sites_p26ilror <- read.csv("data/DataSets_8_17/AttributeTables/sites_p26ilror.txt") # reprojected data
