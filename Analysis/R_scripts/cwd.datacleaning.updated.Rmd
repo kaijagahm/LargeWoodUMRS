@@ -194,6 +194,7 @@ load("../data/inputs/DataSets_8_17/ltrm_fish_data_new.Rda")
 
 #ltrm_fish_data <- read.csv("data/DataSets_8_17/ltrm_fish_data.csv",sep=",",header=TRUE)
  #save(ltrm_fish_data,file="data/DataSets_8_17/ltrm_fish_data_new.Rda")
+ltrm_fish_data <- ltrm_fish_data_new
 
 sites_p26ilror <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_p26ilror.txt") # reprojected data
 
@@ -208,5 +209,19 @@ sites_forest <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_for
 lc_2010 <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/lc_20102.txt") # landcover info
 ```
 
+### Add `year` and `row` column to ltrm_fish_data
+```{r}
+ltrm_fish_data <- ltrm_fish_data %>% mutate(year = str_extract(sdate, pattern = "[[:digit:]]{4}$"),
+                                            row = 1:nrow(.))
+```
 
+### Join barcodes to reprojected data
+```{r}
+sites_p26ilror <- sites_p26ilror %>% rename(row = RowID_) # rename row column
+barcodes_tojoin <- ltrm_fish_data %>% select(barcode, row) %>% distinct()
+sites_p26ilror <- left_join(sites_p26ilror, barcodes_tojoin, by = "row")
+# This will allow for a join with sites_aquaareas5m2. 
+
+head(barcodes_tojoin)
+```
 
