@@ -57,7 +57,6 @@ sites_ur <- left_join(sites_ur, fish_data_EF_tojoin, by = "fishdata_rownum")
 # Note that after this join, we now have the "barcode" column in our data. This will allow us to join other data by barcode.
 ```
 
-
 ## Join aquatic areas data
 ```{r}
 # Make unique column for joining in each
@@ -74,21 +73,19 @@ sites_aa_5m <- sites_aa_5m %>% select(-c(joiner, TARGET_FID, pool)) # remove poo
 sites_ur <- left_join(sites_ur, sites_aa_5m, by = c("stratum", "lcode", "sdate", "utm_e", "utm_n", "snag"))
 ```
 
-## Further cleaning of sites_aa_5m
+## Clean aquatic areas data
 ```{r}
-# add pool information
-sites_aa_5m$pool <- fish_data_EF$pool[rows]
-
 # "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". I'd like these to have values of NA, not 0. 
-badrows_5 <- sites_aa_5m  %>% filter(Perimeter == 0, Area == 0, avg_fetch == 0)
-dim(badrows_5)
+for(i in 1:nrow(sites_ur)){
+  if(sites_ur[i,"Perimeter"] == 0 & sites_ur[i,"Area"] == 0 & sites_ur[i,"avg_fetch"] == 0){
+    sites_ur[i,90:148] <- NA
+  }
+} # there's probably a better way to do this, but whatever.
+```
 
-# Remove the bad rows
-sites_aa_5m <- sites_aa_5m %>% filter(Field1 %notin% badrows_5$Field1)
-dim(sites_aa_5m)
+## Further cleaning
+```{r}
 
-# Check for missing values
-locate.nas(sites_aa_5m)
 
 # Fix missing pools
 # there are a concerning number of NA's in the `pool` column that shouldn't be there. Luckily, the `uniq_id` column tells us which pool these are from. 
