@@ -103,11 +103,11 @@ locate.nas(sites_ur) # we still have some NA's for "snag", but that is to be exp
 ```{r}
 # terrestrial data to join
 terr_tojoin <- sites_terrestrial %>% select(NEAR_FID, NEAR_DIST, Field1)
-sites_aa_5m <- left_join(sites_aa_5m, terr_tojoin, by = "Field1") %>% 
+sites_ur <- left_join(sites_ur, terr_tojoin, by = "Field1") %>% 
   rename(NEAR_TERR_FID = NEAR_FID, # ID of nearest terrestrial region
          NEAR_TERR_DIST = NEAR_DIST) # distance to nearest terrestrial region
 
-# The is the join that I think I was trying to do originally. It assumes that Field1 in sites_terrestrial is equivalent to Field1 in sites_aa_5m. Need to check that this is right.
+# The is the join that I think I was trying to do originally. It assumes that Field1 in sites_terrestrial is equivalent to Field1 in sites_aa_5m (and therefore sites_ur). Need to check that this is right.
 
 # ID of nearest terrestrial region
 ```
@@ -116,7 +116,7 @@ sites_aa_5m <- left_join(sites_aa_5m, terr_tojoin, by = "Field1") %>%
 ```{r}
 # We're going to pull terrestrial areas information columns from `lc_2010`, not from `terrestrial`, because the FID's don't match up in `terrestrial`.
 terrinfo_tojoin <- lc_2010 %>% select(FID, CLASS_7_C, CLASS_7_N)
-sites_aa_5m <- left_join(sites_aa_5m, terrinfo_tojoin, by = c("NEAR_TERR_FID" = "FID")) %>%
+sites_ur <- left_join(sites_ur, terrinfo_tojoin, by = c("NEAR_TERR_FID" = "FID")) %>%
   rename(NEAR_TERR_CLASS_7 = CLASS_7_C,
          NEAR_TERR_CLASS_7_N = CLASS_7_N) # join the columns and rename appropriately
 ```
@@ -124,26 +124,29 @@ sites_aa_5m <- left_join(sites_aa_5m, terrinfo_tojoin, by = c("NEAR_TERR_FID" = 
 ### Distance to forested areas
 ```{r}
 forest_tojoin <- sites_forest %>% select(Field1, NEAR_FID, NEAR_DIST)
-sites_aa_5m <- left_join(sites_aa_5m, forest_tojoin, by = "Field1") %>% 
+sites_ur <- left_join(sites_ur, forest_tojoin, by = "Field1") %>% 
   rename(NEAR_FOREST_FID = NEAR_FID, # which forested area is the closest
          NEAR_FOREST_DIST = NEAR_DIST) # distance to nearest forested area
 ```
 
-## Join site info from fish survey
+## Remove unnecessary columns from fishdata
 ```{r}
-# Add a `year` column
-fish_data_EF <- fish_data_EF %>% mutate(year = str_extract(sdate, "[[:digit:]]{4}$"))
+# Which do we want from fishdata?
+tokeep_fishdata <- c("year", "sitetype", "gear", "wingdyke", "riprap", "trib", "barcode", "summary")
+all_fishdata <- names(fish_data_EF)
+todrop_fishdata <- all[all %notin% tokeep] # to drop from fish data
 
-# Site-level information to join
-fish_tojoin <- fish_data_EF %>% select(year, sitetype, gear, wingdyke, riprap, trib, barcode, summary) %>% distinct()
+todrop_sites_ur <- names(sites_ur)[names(sites_ur) %in% todrop_fishdata] # to drop from sites_ur
 
-# Join
-sites_aa_5m <- left_join(sites_aa_5m, fish_tojoin, by = "barcode") 
+sites_ur <- sites_ur %>% select(-todrop_sites_ur) # drop columns
 ```
 
 ## Cleaning
 ### Exclude variables
 ```{r}
+# Add a `year` column
+sites_ur <- sites_ur %>% mutate(year = str_extract(sdate, "[[:digit:]]{4}$"))
+
 toexclude <- c("OBJECTID", "aa_num", "AQUA_CODE", "AQUA_DESC", "Area", "Acres", "Hectares", "bath_pct", "sd_depth", "area_gt50", "area_gt100", "area_gt200", "area_gt300", "avg_fetch", "econ", "sill", "min_rm", "max_rm", "len_met", "len_outl", "pct_outl", "num_outl", "len_oute", "pct_oute", "num_oute", "pct_aqveg", "pct_opwat", "len_terr", "pct_chan", "len_wetf", "len_wd", "wdl_p_m2", "num_wd", "sco_wd", "psco_wd", "len_revln", "rev_p_m2", "num_rev", "pct_rev", "pct_rev2", "area_tpi1", "pct_tpi1", "area_tpi2", "pct_tpi2", "area_tpi3", "pct_tpi3", "area_tpi4", "pct_tpi4", "sinuosity", "year_phot", "NEAR_TERR_FID", "NEAR_FOREST_FID", "sitetype", "gear", "Join_Count", "FID", "TARGET_FID", "Field1", "pct2wetf", "trib")
 
 all_reduced <- sites_aa_5m %>% select(-toexclude)
