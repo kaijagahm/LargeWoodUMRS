@@ -67,6 +67,10 @@ sites_ur <- sites_ur %>% mutate(joiner = paste(stratum, lcode, sdate, utm_e, utm
 # These appear to be exactly the same. Check:
 sum(sites_aa_5m$joiner != sites_ur$joiner) #yep, they are the same! That makes it easy:
 
+sites_ur <- sites_ur %>% select(-c(joiner, TARGET_FID)) # remove the joiner column and also TARGET_FID; we don't need that anymore.
+sites_aa_5m <- sites_aa_5m %>% select(-c(joiner, TARGET_FID, pool)) # remove pool from this one because it's a factor here, not a number like it is in sites_ur.
+
+# Join the aa information to sites_ur.
 sites_ur <- left_join(sites_ur, sites_aa_5m, by = c("stratum", "lcode", "sdate", "utm_e", "utm_n", "snag"))
 ```
 
