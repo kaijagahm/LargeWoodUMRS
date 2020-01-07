@@ -50,7 +50,7 @@ sites_ur <- rivmi %>% select(TARGET_FID, Field1, stratum, lcode, sdate, utm_e, u
 ```{r}
 sites_ur <- sites_ur %>% rename(fishdata_rownum = Field1) # The Field1 column in this dataset corresponds to the row number in fish_data_EF.
 
-fish_data_EF_tojoin <- fish_data_EF %>% select(-c(site, stratum, lcode, sdate, utm_e, utm_n, snag))
+fish_data_EF_tojoin <- fish_data_EF %>% select(sitetype, gear, wingdyke, riprap, trib, barcode, summary, fishdata_rownum)
 
 sites_ur <- left_join(sites_ur, fish_data_EF_tojoin, by = "fishdata_rownum")
 
@@ -76,9 +76,14 @@ sites_ur <- left_join(sites_ur, sites_aa_5m, by = c("stratum", "lcode", "sdate",
 ## Clean aquatic areas
 ```{r}
 # "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". I'd like these to have values of NA, not 0. 
+
+# get start and end indices for columns.
+start <- which(names(sites_ur) == "OBJECTID")
+end <- which(names(sites_ur) == "year_phot")
+
 for(i in 1:nrow(sites_ur)){
   if(sites_ur[i,"Perimeter"] == 0 & sites_ur[i,"Area"] == 0 & sites_ur[i,"avg_fetch"] == 0){
-    sites_ur[i,90:148] <- NA
+    sites_ur[i, start:end] <- NA
   }
 } # there's probably a better way to do this, but whatever.
 ```
@@ -129,34 +134,27 @@ sites_ur <- left_join(sites_ur, forest_tojoin, by = "Field1") %>%
          NEAR_FOREST_DIST = NEAR_DIST) # distance to nearest forested area
 ```
 
-## Remove unnecessary columns from fishdata
-```{r}
-# Which do we want from fishdata?
-tokeep_fishdata <- c("year", "sitetype", "gear", "wingdyke", "riprap", "trib", "barcode", "summary")
-all_fishdata <- names(fish_data_EF)
-todrop_fishdata <- all[all %notin% tokeep] # to drop from fish data
-
-todrop_sites_ur <- names(sites_ur)[names(sites_ur) %in% todrop_fishdata] # to drop from sites_ur
-
-sites_ur <- sites_ur %>% select(-todrop_sites_ur) # drop columns
-```
-
 ## Cleaning
-### Exclude variables
+### Add a year column
 ```{r}
 # Add a `year` column
 sites_ur <- sites_ur %>% mutate(year = str_extract(sdate, "[[:digit:]]{4}$"))
+```
 
+### Exclude variables
+```{r}
 toexclude <- c("OBJECTID", "aa_num", "AQUA_CODE", "AQUA_DESC", "Area", "Acres", "Hectares", "bath_pct", "sd_depth", "area_gt50", "area_gt100", "area_gt200", "area_gt300", "avg_fetch", "econ", "sill", "min_rm", "max_rm", "len_met", "len_outl", "pct_outl", "num_outl", "len_oute", "pct_oute", "num_oute", "pct_aqveg", "pct_opwat", "len_terr", "pct_chan", "len_wetf", "len_wd", "wdl_p_m2", "num_wd", "sco_wd", "psco_wd", "len_revln", "rev_p_m2", "num_rev", "pct_rev", "pct_rev2", "area_tpi1", "pct_tpi1", "area_tpi2", "pct_tpi2", "area_tpi3", "pct_tpi3", "area_tpi4", "pct_tpi4", "sinuosity", "year_phot", "NEAR_TERR_FID", "NEAR_FOREST_FID", "sitetype", "gear", "Join_Count", "FID", "TARGET_FID", "Field1", "pct2wetf", "trib")
 
-all_reduced <- sites_aa_5m %>% select(-toexclude)
-names(all_reduced)
+toexclude <- toexclude[toexclude %in% names(sites_ur)] # only the ones that are actually in the df
+
+sites_ur <- sites_ur %>% select(-toexclude) # drop columns
+names(sites_ur)
 ```
 
 ### Change some names
 ```{r}
 # Change some names
-all_reduced <- all_reduced %>% rename(perimeter = Perimeter,
+sites_ur <- sites_ur %>% rename(perimeter = Perimeter,
                                       shoreline_density_index = sdi,
                                       pct_prm_wetf = pct1wetf,
                                       river_mile = RIVER_MILE,
@@ -168,18 +166,19 @@ all_reduced <- all_reduced %>% rename(perimeter = Perimeter,
 
 ### Replace -999 etc. with NA
 ```{r}
-factors <- all_reduced %>% select_if(., is.factor) %>% names()
+factors <- sites_ur %>% select_if(., is.factor) %>% names()
 
-colstomodify <- all_reduced %>% select(-factors) %>% select(-barcode) %>% names()
+colstomodify <- sites_ur %>% select(-factors) %>% select(-barcode) %>% names()
                
 for(i in colstomodify){
-  all_reduced[,i][all_reduced[,i] < -5000] <- NA
+  sites_ur[,i][sites_ur[,i] < -5000] <- NA
 }                                   
 ```
 
+# START HERE
 ### Search for NA's
 ```{r}
-locate.nas(all_reduced)
+locate.nas(sites_ur)
 # These seem fine
 ```
 
