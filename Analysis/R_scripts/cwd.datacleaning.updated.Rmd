@@ -19,9 +19,10 @@ source("libraries.R")
 ```{r}
 load("../data/outputs/fish_data_EF.Rda") 
   # Fish sampling data
+fish_data_EF <- fish_data_EF %>% mutate(fishdata_rownum = 1:nrow(fish_data_EF)) #number the rows
+
 sites_p4p8p13 <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_p4p8p13.txt") 
   # reprojected data
-
 
 rivmi <- read.table("../data/inputs/p4p8p13_rivmile.txt", sep = ",", header = T) 
   # river mile data
@@ -42,8 +43,20 @@ lc_2010 <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/lc_2010.txt")
 
 ## Initialize the data frame
 ```{r}
-upper_river <- rivmi %>% select(TARGET_FID, stratum, lcode, sdate, utm_e, utm_n, snag, RIVER_MILE)
+sites_ur <- rivmi %>% select(TARGET_FID, Field1, stratum, lcode, sdate, utm_e, utm_n, snag, RIVER_MILE)
 ```
+
+## Join fish data
+```{r}
+sites_ur <- sites_ur %>% rename(fishdata_rownum = Field1) # The Field1 column in this dataset corresponds to the row number in fish_data_EF.
+
+fish_data_EF_tojoin <- fish_data_EF %>% select(-c(site, stratum, lcode, sdate, utm_e, utm_n, snag))
+
+sites_ur <- left_join(sites_ur, fish_data_EF_tojoin, by = "fishdata_rownum")
+
+# Note that after this join, we now have the "barcode" column in our data. This will allow us to join other data by barcode.
+```
+
 
 ## Join river miles to sites_aa_5m
 ```{r}
