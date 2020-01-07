@@ -73,7 +73,7 @@ sites_aa_5m <- sites_aa_5m %>% select(-c(joiner, TARGET_FID, pool)) # remove poo
 sites_ur <- left_join(sites_ur, sites_aa_5m, by = c("stratum", "lcode", "sdate", "utm_e", "utm_n", "snag"))
 ```
 
-## Clean aquatic areas data
+## Clean aquatic areas
 ```{r}
 # "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". I'd like these to have values of NA, not 0. 
 for(i in 1:nrow(sites_ur)){
@@ -85,8 +85,6 @@ for(i in 1:nrow(sites_ur)){
 
 ## Further cleaning
 ```{r}
-
-
 # Fix missing pools
 # there are a concerning number of NA's in the `pool` column that shouldn't be there. Luckily, the `uniq_id` column tells us which pool these are from. 
 addpools <- function(df){
@@ -96,8 +94,8 @@ addpools <- function(df){
   df$pool[is.na(df$pool)] <- pools[is.na(df$pool)]
   return(df)
 }
-sites_aa_5m <- addpools(sites_aa_5m)
-locate.nas(sites_aa_5m) # we still have some NA's for "snag", but that is to be expected. 
+sites_ur <- addpools(sites_ur)
+locate.nas(sites_ur) # we still have some NA's for "snag", but that is to be expected. There are also some NA's for `pool`, but those have NA for snag and have some sketchy-looking barcodes.
 ```
 
 ## Join environmental info
