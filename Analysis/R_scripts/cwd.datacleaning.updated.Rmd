@@ -60,11 +60,6 @@ sites_ur <- left_join(sites_ur, fish_data_EF_tojoin, by = "fishdata_rownum")
 
 ## Join river miles to sites_aa_5m
 ```{r}
-# Join barcodes to sites_p4p8p13. This will allow for a join with sites_aa_5m.
-sites %<>% rename(fishdata_rownum = Field1) # the Field1 column in this dataset corresponds to the row number in fish_data_EF.
-rows <- sites$fishdata_rownum # get vector of fish data row numbers in the order they appear in the sites data.
-sites$barcode <- fish_data_EF$barcode[rows] # add barcodes to sites data
-
 ### Join barcodes for sites_aa_5m
 sites_aa_5m$barcode <- fish_data_EF$barcode[rows]
 
