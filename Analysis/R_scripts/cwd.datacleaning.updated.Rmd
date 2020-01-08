@@ -138,7 +138,7 @@ sites_ur <- left_join(sites_ur, forest_tojoin, by = "Field1") %>%
 ### Add a year column
 ```{r}
 # Add a `year` column
-sites_ur <- sites_ur %>% mutate(year = str_extract(sdate, "[[:digit:]]{4}$"))
+sites_ur <- sites_ur %>% mutate(year = str_extract(sdate, "[[:digit:]]{4}"))
 ```
 
 ### Exclude variables
@@ -313,17 +313,15 @@ sites_lr <- left_join(sites_lr, forest_tojoin, by = "RowID_") %>%
          NEAR_FOREST_DIST = NEAR_DIST) # distance to nearest forested area
 ```
 
-
-
-
-
-
-
-
-### Add `year` column to ltrm_fish_data
+## Cleaning
+### Add a year column
 ```{r}
-ltrm_fish_data <- ltrm_fish_data %>% mutate(year = str_extract(sdate, pattern = "[[:digit:]]{4}$"))
+# Add a `year` column
+sites_lr <- sites_lr %>% mutate(year = str_extract(sdate, "[[:digit:]]{4}"))
 ```
+
+
+
 
 ### Join barcodes to reprojected data
 ```{r}
