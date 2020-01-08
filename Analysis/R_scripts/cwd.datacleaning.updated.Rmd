@@ -10,12 +10,13 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Load functions and libraries
-```{r}
+```{r echo = F}
 source("ownfunctions.R")
 source("libraries.R")
 ```
 
-# Load data (Upper River-- 4, 8, 13)
+# Upper River (4, 8, 13)
+## Load data
 ```{r}
 load("../data/outputs/fish_data_EF.Rda") 
   # Fish sampling data
@@ -175,7 +176,6 @@ for(i in colstomodify){
 }                                   
 ```
 
-# START HERE
 ### Search for NA's
 ```{r}
 locate.nas(sites_ur)
@@ -184,15 +184,21 @@ locate.nas(sites_ur)
 
 ### Exclude UXO
 ```{r}
-all_reduced <- all_reduced %>% filter(stratum != "UXO")
+sites_ur <- sites_ur %>% filter(stratum != "UXO")
 ```
 
 ### Remove pseudo-shoreline observations
 ```{r}
-all_reduced <- all_reduced %>% filter(summary != "7") # a code of 7 in the summary column means that the observations are pseudo-shoreline and should be excluded.
+sites_ur <- sites_ur %>% filter(summary != "7") # a code of 7 in the summary column means that the observations are pseudo-shoreline and should be excluded.
 ```
 
-# Load data (Lower River-- 26, La Grange, Open River)
+## Save data
+```{r}
+#save(sites_ur, file = "../data/outputs/sites_ur.Rda")
+```
+
+# Lower River (26, La Grange, Open River)
+## Load data
 ```{r}
 # Load files
 load("../data/inputs/DataSets_8_17/ltrm_fish_data_new.Rda") 
@@ -200,12 +206,16 @@ load("../data/inputs/DataSets_8_17/ltrm_fish_data_new.Rda")
 
 #ltrm_fish_data <- read.csv("data/DataSets_8_17/ltrm_fish_data.csv",sep=",",header=TRUE)
  #save(ltrm_fish_data,file="data/DataSets_8_17/ltrm_fish_data_new.Rda")
-ltrm_fish_data <- ltrm_fish_data_new
+ltrm_fish_data <- ltrm_fish_data_new # This is the equivalent of fish_data_EF for the upper river.
+ltrm_fish_data <- ltrm_fish_data %>% mutate(fishdata_rownum = 1:nrow(ltrm_fish_data)) #number the rows
 
-sites_p26ilror <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_p26ilror.txt") # reprojected data
+sites_p26ilror <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_p26ilror.txt") # reprojected data. This is the equivalent of sites_p4p8p13
+
+# I can't find an equivalent of the river miles file for the lower river. Do we have?
 
 sites_aa_5m <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_aquaareas5m2.txt") # merged aquatic areas data for points buffered by 5 meters.
 
+## Environmental data
 sites_terrestrial <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_terrestrial2.txt") # nearest terrestrial area info for each point
 
 terrestrial_forests <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/Terrestrial_Forests2.txt") # info about terrestrial areas/forests
@@ -214,6 +224,23 @@ sites_forest <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_for
 
 lc_2010 <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/lc_20102.txt") # landcover info
 ```
+
+## Initialize the data frame
+```{r}
+sites_lr <- sites_p26ilror
+```
+
+## Join fish data
+```{r}
+sites_lr <- sites_lr %>% rename(fishdata_rownum = RowID_) # The RowID_ column in this dataset corresponds to the row number in ltrm_fish_data, I think. I'm inferring this from parallels to the upper river data.
+
+ltrm_fish_data_tojoin <- ltrm_fish_data %>% select(sitetype, gear, wingdyke, riprap, trib, barcode, summary, fishdata_rownum)
+
+sites_lr <- left_join(sites_lr, ltrm_fish_data_tojoin, by = "fishdata_rownum")
+# Note that after this join, we now have the "barcode" column in our data. This will allow us to join other data by barcode.
+```
+
+
 
 ### Add `year` and `row` column to ltrm_fish_data
 ```{r}
