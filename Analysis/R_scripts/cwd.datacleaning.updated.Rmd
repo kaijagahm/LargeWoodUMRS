@@ -342,6 +342,46 @@ sites_lr <- sites_lr %>% rename(perimeter = Perimeter,
                                       near_forest_dist = NEAR_FOREST_DIST) # would need to rename river mile if it were in here.
 ```
 
+### Replace -999 etc. with NA
+```{r}
+factors <- sites_lr %>% select_if(., is.factor) %>% names()
+
+colstomodify <- sites_lr %>% select(-factors) %>% select(-barcode) %>% names()
+               
+for(i in colstomodify){
+  sites_lr[,i][sites_lr[,i] < -5000] <- NA
+}                                   
+```
+
+### FIX THIS: Recode pools
+```{r}
+# for some reason, dplyr::recode was throwing an error here?
+```
+
+
+### FIX THIS: Search for NA's
+```{r}
+locate.nas(sites_lr)
+# There are some mystery NA's in here that need to be looked at.
+```
+
+### Exclude UXO
+```{r}
+sites_lr <- sites_lr %>% filter(stratum != "UXO")
+```
+
+### Remove pseudo-shoreline observations
+```{r}
+sites_lr <- sites_lr %>% filter(summary != "7") # a code of 7 in the summary column means that the observations are pseudo-shoreline and should be excluded.
+```
+
+## Save data
+```{r}
+#save(sites_lr, file = "../data/outputs/sites_lr.Rda")
+```
+
+
+
 
 ### Join barcodes to reprojected data
 ```{r}
