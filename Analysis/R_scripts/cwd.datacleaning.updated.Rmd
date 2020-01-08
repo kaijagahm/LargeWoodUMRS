@@ -320,7 +320,27 @@ sites_lr <- left_join(sites_lr, forest_tojoin, by = "RowID_") %>%
 sites_lr <- sites_lr %>% mutate(year = str_extract(sdate, "[[:digit:]]{4}"))
 ```
 
+### Exclude variables
+```{r}
+toexclude <- c("OBJECTID", "aa_num", "AQUA_CODE", "AQUA_DESC", "Area", "Acres", "Hectares", "bath_pct", "sd_depth", "area_gt50", "area_gt100", "area_gt200", "area_gt300", "avg_fetch", "econ", "sill", "min_rm", "max_rm", "len_met", "len_outl", "pct_outl", "num_outl", "len_oute", "pct_oute", "num_oute", "pct_aqveg", "pct_opwat", "len_terr", "pct_chan", "len_wetf", "len_wd", "wdl_p_m2", "num_wd", "sco_wd", "psco_wd", "len_revln", "rev_p_m2", "num_rev", "pct_rev", "pct_rev2", "area_tpi1", "pct_tpi1", "area_tpi2", "pct_tpi2", "area_tpi3", "pct_tpi3", "area_tpi4", "pct_tpi4", "sinuosity", "year_phot", "NEAR_TERR_FID", "NEAR_FOREST_FID", "sitetype", "gear", "Join_Count", "FID", "TARGET_FID", "Field1", "pct2wetf", "trib")
 
+toexclude <- toexclude[toexclude %in% names(sites_lr)] # only the ones that are actually in the df
+
+sites_lr <- sites_lr %>% select(-toexclude) # drop columns
+names(sites_lr)
+```
+
+### Change some names
+```{r}
+# Change some names
+sites_lr <- sites_lr %>% rename(perimeter = Perimeter,
+                                      shoreline_density_index = sdi,
+                                      pct_prm_wetf = pct1wetf,
+                                      near_terr_dist = NEAR_TERR_DIST,
+                                      near_terr_class_7 = NEAR_TERR_CLASS_7,
+                                      near_terr_name = NEAR_TERR_CLASS_7_N,
+                                      near_forest_dist = NEAR_FOREST_DIST) # would need to rename river mile if it were in here.
+```
 
 
 ### Join barcodes to reprojected data
