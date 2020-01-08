@@ -379,17 +379,3 @@ sites_lr <- sites_lr %>% filter(summary != "7") # a code of 7 in the summary col
 ```{r}
 #save(sites_lr, file = "../data/outputs/sites_lr.Rda")
 ```
-
-
-
-
-### Join barcodes to reprojected data
-```{r}
-sites_p26ilror <- sites_p26ilror %>% rename(row = RowID_) # rename row column
-barcodes_tojoin <- ltrm_fish_data %>% select(barcode, row) %>% distinct()
-sites_p26ilror <- left_join(sites_p26ilror, barcodes_tojoin, by = "row")
-# This will allow for a join with sites_aquaareas5m2. 
-
-head(barcodes_tojoin)
-```
-
