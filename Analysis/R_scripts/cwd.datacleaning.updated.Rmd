@@ -242,10 +242,9 @@ sites_lr <- left_join(sites_lr, ltrm_fish_data_tojoin, by = "fishdata_rownum")
 
 
 
-### Add `year` and `row` column to ltrm_fish_data
+### Add `year` column to ltrm_fish_data
 ```{r}
-ltrm_fish_data <- ltrm_fish_data %>% mutate(year = str_extract(sdate, pattern = "[[:digit:]]{4}$"),
-                                            row = 1:nrow(.))
+ltrm_fish_data <- ltrm_fish_data %>% mutate(year = str_extract(sdate, pattern = "[[:digit:]]{4}$"))
 ```
 
 ### Join barcodes to reprojected data
