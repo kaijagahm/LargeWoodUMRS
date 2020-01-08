@@ -15,6 +15,7 @@ source("ownfunctions.R")
 source("libraries.R")
 ```
 
+# _______________________
 # Upper River (4, 8, 13)
 ## Load data
 ```{r}
@@ -202,6 +203,7 @@ sites_ur <- sites_ur %>% filter(summary != "7") # a code of 7 in the summary col
 #save(sites_ur, file = "../data/outputs/sites_ur.Rda")
 ```
 
+# _______________________
 # Lower River (26, La Grange, Open River)
 ## Load data
 ```{r}
