@@ -176,9 +176,13 @@ for(i in colstomodify){
 }                                   
 ```
 
-### FIX THIS: Recode pools
+###Recode pools
 ```{r}
-# for some reason, dplyr::recode was throwing an error here?
+sites_ur <- sites_ur %>% mutate(pool = dplyr::recode(pool, 
+                         `P04`="4",
+                         `P08`="8",
+                         `P13` = "13"))
+sites_ur$pool <- droplevels(sites_ur$pool)
 ```
 
 
@@ -200,7 +204,7 @@ sites_ur <- sites_ur %>% filter(summary != "7") # a code of 7 in the summary col
 
 ## Save data
 ```{r}
-#save(sites_ur, file = "../data/outputs/sites_ur.Rda")
+save(sites_ur, file = "../data/outputs/sites_ur.Rda")
 ```
 
 # _______________________
