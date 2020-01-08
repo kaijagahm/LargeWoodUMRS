@@ -176,17 +176,13 @@ for(i in colstomodify){
 }                                   
 ```
 
-###Recode pools
+### Drop empty pools
 ```{r}
-sites_ur <- sites_ur %>% mutate(pool = dplyr::recode(pool, 
-                         `P04`="4",
-                         `P08`="8",
-                         `P13` = "13"))
 sites_ur$pool <- droplevels(sites_ur$pool)
 ```
 
 
-### Search for NA's
+### Investigate NA's
 ```{r}
 locate.nas(sites_ur)
 # These seem fine
@@ -204,7 +200,7 @@ sites_ur <- sites_ur %>% filter(summary != "7") # a code of 7 in the summary col
 
 ## Save data
 ```{r}
-save(sites_ur, file = "../data/outputs/sites_ur.Rda")
+#save(sites_ur, file = "../data/outputs/sites_ur.Rda")
 ```
 
 # _______________________
@@ -259,6 +255,7 @@ sites_lr <- sites_lr %>% mutate(joiner = paste(stratum, lcode, sdate, utm_e, utm
 
 # These appear to be exactly the same. Check:
 sum(sites_aa_5m$joiner != sites_lr$joiner) #yep, they are the same! That makes it easy:
+nrow(sites_aa_5m) == nrow(sites_lr) #TRUE
 
 sites_lr <- sites_lr %>% select(-c(joiner, FID)) # remove the joiner column and also FID; we don't need that anymore.
 sites_aa_5m <- sites_aa_5m %>% select(-c(joiner, FID))
@@ -269,7 +266,7 @@ sites_lr <- left_join(sites_lr, sites_aa_5m, by = c("stratum", "lcode", "sdate",
 
 ## Clean aquatic areas
 ```{r}
-# "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". I'd like these to have values of NA, not 0. 
+# "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". I'd like these to have values of NA, not 0.
 
 # get start and end indices for columns.
 start <- which(names(sites_lr) == "OBJECTID")
@@ -359,17 +356,21 @@ for(i in colstomodify){
 }                                   
 ```
 
-### FIX THIS: Recode pools
+### Drop empty pools
 ```{r}
-# for some reason, dplyr::recode was throwing an error here?
+sites_lr$pool <- droplevels(sites_lr$pool)
 ```
 
-
-### FIX THIS: Search for NA's
+### Investigate NA's
 ```{r}
 locate.nas(sites_lr)
 # There are some mystery NA's in here that need to be looked at.
+# The columns that have all the NA's come from sites_aa_5m. Were these NA's in the original file, or were they the result of a faulty join?
+locate.nas(sites_aa_5m) # There are no NA's in the original file, so there must have been a problem joining. 
+# Immediately after joining, there are no NA's in the relevant columns. They must have been introduced later on.
+# Turns out the NA's were properly introduced when I went through and changed 0's to NA's. Indeed, there were 947 sites in the original sites_aa_5m dataset that had 0 across all the columns, which means that the intersection with the layer failed. The NA's are a result of the original data, then, not a mistake on my end.
 ```
+
 
 ### Exclude UXO
 ```{r}
