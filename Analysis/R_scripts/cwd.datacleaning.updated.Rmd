@@ -68,7 +68,7 @@ sites_ur <- sites_ur %>% mutate(joiner = paste(stratum, lcode, sdate, utm_e, utm
 sum(sites_aa_5m$joiner != sites_ur$joiner) #yep, they are the same! That makes it easy:
 
 sites_ur <- sites_ur %>% select(-c(joiner, TARGET_FID)) # remove the joiner column and also TARGET_FID; we don't need that anymore.
-sites_aa_5m <- sites_aa_5m %>% select(-c(joiner, TARGET_FID, pool)) # remove pool from this one because it's a factor here, not a number like it is in sites_ur.
+sites_aa_5m <- sites_aa_5m %>% select(-c(joiner, TARGET_FID)) 
 
 # Join the aa information to sites_ur.
 sites_ur <- left_join(sites_ur, sites_aa_5m, by = c("stratum", "lcode", "sdate", "utm_e", "utm_n", "snag"))
@@ -89,7 +89,6 @@ for(i in 1:nrow(sites_ur)){
 } # there's probably a better way to do this, but whatever.
 ```
 
-## Further cleaning
 ```{r}
 # Fix missing pools
 # there are a concerning number of NA's in the `pool` column that shouldn't be there. Luckily, the `uniq_id` column tells us which pool these are from. 
@@ -176,6 +175,12 @@ for(i in colstomodify){
 }                                   
 ```
 
+### FIX THIS: Recode pools
+```{r}
+# for some reason, dplyr::recode was throwing an error here?
+```
+
+
 ### Search for NA's
 ```{r}
 locate.nas(sites_ur)
@@ -239,6 +244,23 @@ ltrm_fish_data_tojoin <- ltrm_fish_data %>% select(sitetype, gear, wingdyke, rip
 sites_lr <- left_join(sites_lr, ltrm_fish_data_tojoin, by = "fishdata_rownum")
 # Note that after this join, we now have the "barcode" column in our data. This will allow us to join other data by barcode.
 ```
+
+## Join aquatic areas data
+```{r}
+# Make unique column for joining in each
+sites_aa_5m <- sites_aa_5m %>% mutate(joiner = paste(stratum, lcode, sdate, utm_e, utm_n, snag))
+sites_lr <- sites_lr %>% mutate(joiner = paste(stratum, lcode, sdate, utm_e, utm_n, snag))
+
+# These appear to be exactly the same. Check:
+sum(sites_aa_5m$joiner != sites_lr$joiner) #yep, they are the same! That makes it easy:
+
+sites_lr <- sites_lr %>% select(-c(joiner, FID)) # remove the joiner column and also FID; we don't need that anymore.
+sites_aa_5m <- sites_aa_5m %>% select(-c(joiner, FID))
+
+# Join the aa information to sites_lr.
+sites_lr <- left_join(sites_lr, sites_aa_5m, by = c("stratum", "lcode", "sdate", "utm_e", "utm_n", "snag"))
+```
+
 
 
 
