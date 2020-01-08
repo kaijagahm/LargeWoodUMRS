@@ -261,7 +261,20 @@ sites_aa_5m <- sites_aa_5m %>% select(-c(joiner, FID))
 sites_lr <- left_join(sites_lr, sites_aa_5m, by = c("stratum", "lcode", "sdate", "utm_e", "utm_n", "snag"))
 ```
 
+## Clean aquatic areas
+```{r}
+# "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". I'd like these to have values of NA, not 0. 
 
+# get start and end indices for columns.
+start <- which(names(sites_lr) == "OBJECTID")
+end <- which(names(sites_lr) == "year_phot")
+
+for(i in 1:nrow(sites_lr)){
+  if(sites_lr[i,"Perimeter"] == 0 & sites_lr[i,"Area"] == 0 & sites_lr[i,"avg_fetch"] == 0){
+    sites_lr[i, start:end] <- NA
+  }
+} # there's probably a better way to do this, but whatever.
+```
 
 
 ### Add `year` column to ltrm_fish_data
