@@ -386,3 +386,40 @@ sites_lr <- sites_lr %>% filter(summary != "7") # a code of 7 in the summary col
 ```{r}
 #save(sites_lr, file = "../data/outputs/sites_lr.Rda")
 ```
+
+# __________________
+# Join data
+## Align column names
+### Check column names
+```{r}
+names(sites_ur)
+names(sites_lr)
+```
+
+### Fix inconsistencies
+```{r}
+sites_lr <- sites_lr %>% select(-c("OBJECTID_1", "RowID_"))
+sites_lr <- sites_lr %>% mutate(river_mile = NA)
+names(sites_lr) 
+names(sites_ur)
+# Now they have the same names but in a different order
+
+sites_lr <- sites_lr[,names(sites_ur)] # align names
+```
+
+## Add ID column
+```{r}
+sites_lr <- sites_lr %>% mutate(upperlower = "lower")
+sites_ur <- sites_ur %>% mutate(upperlower = "upper")
+```
+
+## Perform join
+```{r}
+sites_upperlower <- rbind(sites_lr, sites_ur)
+```
+
+## Save data
+```{r}
+#save(sites_upperlower, file = "../data/outputs/sites_upperlower.Rda")
+```
+
