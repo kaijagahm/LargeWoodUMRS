@@ -276,6 +276,49 @@ for(i in 1:nrow(sites_lr)){
 } # there's probably a better way to do this, but whatever.
 ```
 
+```{r}
+# Fix missing pools using addpools function defined for ur above.
+sites_lr <- addpools(sites_lr)
+locate.nas(sites_lr) # Fewer NA's for `snag` than for the upper river data set, but there are many NA's for the environmental data. I wonder if these are problematic?
+```
+
+## Join environmental info
+### Distance to terrestrial areas
+```{r}
+# terrestrial data to join
+terr_tojoin <- sites_terrestrial %>% select(NEAR_FID, NEAR_DIST, RowID_)
+sites_lr <- left_join(sites_lr, terr_tojoin, by = "RowID_") %>% 
+  rename(NEAR_TERR_FID = NEAR_FID, # ID of nearest terrestrial region
+         NEAR_TERR_DIST = NEAR_DIST) # distance to nearest terrestrial region
+
+# The is the join that I think I was trying to do originally. It assumes that RowID_ in sites_terrestrial is equivalent to RowID_ in sites_aa_5m (and therefore sites_lr). Need to check that this is right.
+
+# ID of nearest terrestrial region
+```
+
+### Info about nearest terrestrial region
+```{r}
+# We're going to pull terrestrial areas information columns from `lc_2010`, not from `terrestrial`, because the FID's don't match up in `terrestrial`.
+terrinfo_tojoin <- lc_2010 %>% select(FID, CLASS_7_C, CLASS_7_N)
+sites_lr <- left_join(sites_lr, terrinfo_tojoin, by = c("NEAR_TERR_FID" = "FID")) %>%
+  rename(NEAR_TERR_CLASS_7 = CLASS_7_C,
+         NEAR_TERR_CLASS_7_N = CLASS_7_N) # join the columns and rename appropriately
+```
+
+### Distance to forested areas
+```{r}
+forest_tojoin <- sites_forest %>% select(RowID_, NEAR_FID, NEAR_DIST)
+sites_lr <- left_join(sites_lr, forest_tojoin, by = "RowID_") %>% 
+  rename(NEAR_FOREST_FID = NEAR_FID, # which forested area is the closest
+         NEAR_FOREST_DIST = NEAR_DIST) # distance to nearest forested area
+```
+
+
+
+
+
+
+
 
 ### Add `year` column to ltrm_fish_data
 ```{r}
