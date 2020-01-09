@@ -13,6 +13,8 @@ source("Analysis/R_scripts/ownfunctions.R")
 
 # Load data (combined upper/lower river)
 load("Analysis/data/outputs/sites_upperlower.Rda")
+load("Analysis/data/outputs/sites_ur.Rda")
+load("Analysis/data/outputs/sites_lr.Rda")
 
 # Data Cleaning
 ## Remove the river mile column
@@ -21,8 +23,8 @@ sites_upperlower <- sites_upperlower %>% select(-river_mile)
 ## Exclude strata: BWC-O and MCB-W
 sites_upperlower <- sites_upperlower %>% filter(stratum %notin% c("BWC-O", "MCB-W")) %>% droplevels()
 
-## Exclude sites NA for snag
-sites_upperlower <- sites_upperlower %>% filter(!is.na(snag))
+## Exclude sites NA for snag and/or pool
+sites_upperlower <- sites_upperlower %>% filter(!is.na(snag), !is.na(pool))
 
 # Summaries
 ## Overall
@@ -31,52 +33,29 @@ summary_all <- sites_upperlower %>% summarize(npoints = n(),
                                               nowood = sum(snag == 0),
                                               propwood = wood/npoints)
 
+
+
 ## By pool
-summary_bypool <- sites_upperlower %>% group_by(pool) %>%
+summary_bypool <- sites_upperlower %>% 
+  group_by(pool) %>%
   summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood =  sum(snag == 0),
             propwood = wood/npoints)
 
-# UH OH-- MANY NA POOLS!
-
-
-
-
-
-# Summarize by year and pool
-b.yp <- arc %>% 
-  group_by(pool, year) %>% 
+## By year and pool
+summary_yearpool <- sites_upperlower %>% group_by(pool, year) %>%
   summarize(npoints = n(),
             wood = sum(snag == 1),
-            nowood = sum(snag == 0),
-            propwood = sum(snag ==1)/n()) %>%
-  as.data.frame()
-head(b.yp)
+            nowood =  sum(snag == 0),
+            propwood = wood/npoints)
 
-      # Plot proportions by year and pool
-      ggplot(data = b.yp, aes(x = year, y = propwood, color = pool))+
-        geom_line(size = 1.5)+
-        ylim(0,1)+
-        theme_bw()+
-        xlab("Year")+
-        ylab("Proportion of points with wood")+
-        ggtitle("")+
-        scale_color_manual(name = "Pool", 
-                          #values = c("darkturquoise", "firebrick2", "royalblue4", "goldenrod2", "mediumorchid3", "black"))+
-                          #values = c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33"))+
-                          values = c("#E41A1C", "#FF7F00", "#4DAF4A","#377EB8", "#984EA3",  "grey"))+
-        theme(text = element_text(size = 20))
+### plot
+summary_yearpool %>% ggplot(aes(x = year, y = propwood, col = pool, group = pool))+
+  geom_line()
 
-# Summarize by pool
-b.p <- arc %>% group_by(pool) %>% 
-  summarize(npoints = n(),
-            wood = sum(snag == 1),
-            nowood = sum(snag == 0),
-            propwood = sum(snag == 1)/n()) %>%
-  as.data.frame()
-b.p
 
+# FIX THIS!
       ## Test for significant differences in wood proportion
       chisq.test(b.p[,3:4]) # yes, these are significantly different
     
@@ -84,14 +63,13 @@ b.p
       (ppt <- pairwise.prop.test(x = b.p$wood, n = b.p$npoints, p.adjust.method = "bonferroni"))
 
 # Summarize by stratum
-b.s <- arc %>% group_by(stratum) %>% 
+summary_stratum <- sites_upperlower %>% group_by(stratum) %>% 
   summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood = sum(snag == 0),
-            propwood = sum(snag == 1)/n()) %>%
-  as.data.frame()
-b.s
+            propwood = wood/npoints)
 
+# FIX THIS!
       # Calculate confidence intervals for these proportions
       cis <- BinomCI(b.s$wood, n = b.s$npoints, conf.level = 0.95)
       b.s <- cbind(b.s, cis[,2:3])
@@ -116,14 +94,13 @@ b.s
         ggtitle("Wood proportion by stratum")
 
 # Summarize by stratum and pool
-b.sp <- arc %>% group_by(pool, stratum) %>%
+summary_stratumpool <- sites_upperlower %>% group_by(pool, stratum) %>%
   summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood = sum(snag == 0),
-            propwood = sum(snag == 1)/n()) %>%
-  as.data.frame()
-head(b.sp)
+            propwood = wood/npoints)
 
+# FIX THIS!
       # Test for significant differences
       chisq.test(b.sp[,3:4])
 
