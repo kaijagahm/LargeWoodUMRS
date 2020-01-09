@@ -1,7 +1,7 @@
 ################################################################################################################################
 # 
 # Edited version of "descriptive_stats_clean.R" by Kaija Gahm, 11 Aug 2018 
-# Updated January 2020 by Kaija Gahm
+# Deprecated as of January 2020: shifted over to descriptive_stats.Rmd.
 #
 # output: 
 #
@@ -36,12 +36,21 @@ summary_all <- sites_upperlower %>% summarize(npoints = n(),
 
 
 ## By pool
-summary_bypool <- sites_upperlower %>% 
+summary_pool <- sites_upperlower %>% 
   group_by(pool) %>%
   summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood =  sum(snag == 0),
             propwood = wood/npoints)
+
+## Test for significant differences in wood proportion
+chisq.test(summary_pool[,c("wood", "nowood")]) # yes, these are significantly different
+
+## Pairwise comparisons
+pairwise.prop.test(x = summary_pool$wood, n = summary_pool$npoints, 
+                   p.adjust.method = "bonferroni")
+
+
 
 ## By year and pool
 summary_yearpool <- sites_upperlower %>% group_by(pool, year) %>%
@@ -55,13 +64,6 @@ summary_yearpool %>% ggplot(aes(x = year, y = propwood, col = pool, group = pool
   geom_line()
 
 
-# FIX THIS!
-      ## Test for significant differences in wood proportion
-      chisq.test(b.p[,3:4]) # yes, these are significantly different
-    
-      ## Pairwise comparisons
-      (ppt <- pairwise.prop.test(x = b.p$wood, n = b.p$npoints, p.adjust.method = "bonferroni"))
-
 # Summarize by stratum
 summary_stratum <- sites_upperlower %>% group_by(stratum) %>% 
   summarize(npoints = n(),
@@ -71,17 +73,17 @@ summary_stratum <- sites_upperlower %>% group_by(stratum) %>%
 
 # FIX THIS!
       # Calculate confidence intervals for these proportions
-      cis <- BinomCI(b.s$wood, n = b.s$npoints, conf.level = 0.95)
-      b.s <- cbind(b.s, cis[,2:3])
+      cis <- BinomCI(summary_stratum$wood, n = summary_stratum$npoints, conf.level = 0.95)
+      summary_stratum <- cbind(summary_stratum, cis[,2:3])
       
       # Test for significant differences
-      chisq.test(b.s[,2:3])
+      chisq.test(summary_stratum[,2:3])
       
       # Pairwise comparisons
-      ppt1 <- pairwise.prop.test(x = b.s$wood, n = b.s$npoints, p.adjust.method = "bonferroni")
+      pairwise.prop.test(x = summary_stratum$wood, n = summary_stratum$npoints, p.adjust.method = "bonferroni")
       
       # Plot of proportions and confidence intervals by stratum
-      ggplot(data = b.s, aes(x = stratum, y = propwood))+
+      ggplot(data = summary_stratum, aes(x = stratum, y = propwood))+
         geom_point(size = 3)+
         geom_errorbar(aes(ymin = lwr.ci, 
                           ymax = upr.ci), 
@@ -98,15 +100,15 @@ summary_stratumpool <- sites_upperlower %>% group_by(pool, stratum) %>%
   summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood = sum(snag == 0),
-            propwood = wood/npoints)
+            propwood = wood/npoints) 
 
-# FIX THIS!
       # Test for significant differences
-      chisq.test(b.sp[,3:4])
+      chisq.test(summary_stratumpool[,3:4])
 
       # Calculate confidence intervals for the proportions
-      cis <- BinomCI(b.sp$wood, n = b.sp$npoints, conf.level = 0.95)
-      b.sp <- cbind(b.sp, cis[,2:3])
+      cis <- BinomCI(summary_stratumpool$wood, n = summary_stratumpool$npoints, conf.level = 0.95) %>% 
+        as.data.frame() %>% select(lwr.ci, upr.ci)
+      summary_stratumpool <- cbind(summary_stratumpool, cis[,1:2])
       
       # Plot of proportions and confidence intervals by stratum and pool
       ggplot(data = b.sp, aes(x = stratum, y = propwood, color = pool))+
@@ -125,6 +127,11 @@ summary_stratumpool <- sites_upperlower %>% group_by(pool, stratum) %>%
         scale_color_manual(name = "Pool", 
                            values = c("#E41A1C", "#FF7F00", "#4DAF4A","#377EB8", "#984EA3",  "grey"))
                            #values = c("darkturquoise", "firebrick2", "royalblue4", "goldenrod2", "mediumorchid3", "black"))
+      
+      
+      
+      
+      
       
       
       
