@@ -102,7 +102,29 @@ addpools <- function(df){
 }
 sites_ur <- addpools(sites_ur)
 locate.nas(sites_ur) # we still have some NA's for "snag", but that is to be expected. There are also some NA's for `pool`, but those have NA for snag and have some sketchy-looking barcodes.
+
+# More NA pools fixing
+sum(is.na(sites_ur$pool)) # we still have a bunch of NA's for pool
+
+# Make a plot to see what's going on
+sites_ur %>% ggplot(aes(x = utm_e, y = utm_n))+
+  geom_point(aes(col = pool)) # This shows some pretty clear divisions between pools along the river. The NA's are evenly mixed in with the other points.
+
+# Assign the NA pools based on lat/lon
+napools <- sites_ur %>% filter(is.na(pool))
+napools <- napools %>% mutate(pool = case_when(utm_n > 4900000 ~ "P04",
+                                               utm_n > 4800000 & utm_n < 4900000 ~ "P08",
+                                               utm_n < 4700000 ~ "P13"))
+
+sites_ur$pool[is.na(sites_ur$pool)] <- napools$pool
+
+# Double check with a plot
+sites_ur %>% ggplot(aes(x = utm_e, y = utm_n))+
+  geom_point(aes(col = pool)) # Looks good!
 ```
+
+
+
 
 ## Join environmental info
 ### Distance to terrestrial areas
@@ -421,5 +443,10 @@ sites_upperlower <- rbind(sites_lr, sites_ur)
 ## Save data
 ```{r}
 #save(sites_upperlower, file = "../data/outputs/sites_upperlower.Rda")
+```
+
+# Investigate NA pools
+```{r}
+sites_ur %>% filter(is.na(pool))
 ```
 
