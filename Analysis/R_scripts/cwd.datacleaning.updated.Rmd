@@ -305,6 +305,14 @@ for(i in 1:nrow(sites_lr)){
 # Fix missing pools using addpools function defined for ur above.
 sites_lr <- addpools(sites_lr)
 locate.nas(sites_lr) # Fewer NA's for `snag` than for the upper river data set, but there are many NA's for the environmental data. I wonder if these are problematic?
+
+# More NA pools fixing
+sum(is.na(sites_lr$pool)) # we still have a bunch of NA's for pool
+
+# Make a plot to see what's going on
+sites_lr %>% ggplot(aes(x = utm_e, y = utm_n))+
+  geom_point(aes(col = pool)) # There are some very weird things going on with the UTM coordinates here.
+
 ```
 
 ## Join environmental info
