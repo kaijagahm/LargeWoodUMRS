@@ -24,3 +24,6 @@
 *.Rproj.user
 *.Rproj.user/
 .Rproj.user
+
+# Manuscript
+*.docx
