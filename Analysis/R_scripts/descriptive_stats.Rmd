@@ -11,15 +11,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Source libraries and functions
 ```{r}
-source("Analysis/R_scripts/libraries.R")
-source("Analysis/R_scripts/ownfunctions.R")
+source("../R_scripts/libraries.R")
+source("../R_scripts/ownfunctions.R")
 ```
 
 # Load data (combined upper/lower river)
 ```{r}
-load("Analysis/data/outputs/sites_upperlower.Rda")
-load("Analysis/data/outputs/sites_ur.Rda")
-load("Analysis/data/outputs/sites_lr.Rda")
+load("../data/outputs/sites_upperlower.Rda")
+load("../data/outputs/sites_ur.Rda")
+load("../data/outputs/sites_lr.Rda")
 ```
 
 # Data Cleaning
@@ -49,22 +49,100 @@ summary_all <- sites_upperlower %>% summarize(npoints = n(),
 
 ## By pool
 ```{r}
-summary_bypool <- sites_upperlower %>% 
+# Summary
+summary_pool <- sites_upperlower %>% 
   group_by(pool) %>%
   summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood =  sum(snag == 0),
             propwood = wood/npoints)
+
+# Test for significant differences
+chisq.test(summary_pool[,c("wood", "nowood")])
+
+# Post-hoc test with Bonferroni correction
+pairwise.prop.test(x = summary_pool$wood, n = summary_pool$npoints, 
+                   p.adjust.method = "bonferroni")
 ```
 
 ## By year and pool
 ```{r}
+# Summary
 summary_yearpool <- sites_upperlower %>% group_by(pool, year) %>%
   summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood =  sum(snag == 0),
             propwood = wood/npoints)
 
+# Plot
 summary_yearpool %>% ggplot(aes(x = year, y = propwood, col = pool, group = pool))+
   geom_line()
 ```
+
+## By stratum
+```{r}
+# Summary
+summary_stratum <- sites_upperlower %>% group_by(stratum) %>% 
+  summarize(npoints = n(),
+            wood = sum(snag == 1),
+            nowood = sum(snag == 0),
+            propwood = wood/npoints)
+
+# Calculate confidence intervals for these proportions
+      cis <- BinomCI(summary_stratum$wood, n = summary_stratum$npoints, conf.level = 0.95)
+      summary_stratum <- cbind(summary_stratum, cis[,2:3])
+      row.names(summary_stratum) <- NULL
+
+# Test for significant differences
+chisq.test(summary_stratum[,c("wood", "nowood")])
+
+# Post-hoc test with Bonferroni correction
+pairwise.prop.test(x = summary_bypool$wood, n = summary_bypool$npoints, 
+                   p.adjust.method = "bonferroni")
+
+# Plot of proportions and confidence intervals by stratum
+summary_stratum %>% ggplot(aes(x = stratum, y = propwood))+
+  geom_point(size = 3)+
+  geom_errorbar(aes(ymin = lwr.ci,
+                    ymax = upr.ci),
+                width = 0,
+                size = 1.2)+
+  theme_bw()+
+  theme(text = element_text(size = 16))+
+  ylab("Proportion of points with wood")+
+  xlab("Habitat Stratum")+
+  ggtitle("Wood proportion by stratum")
+
+```
+
+## By stratum and pool
+```{r}
+# Summary
+summary_stratumpool <- sites_upperlower %>% group_by(pool, stratum) %>%
+  summarize(npoints = n(),
+            wood = sum(snag == 1),
+            nowood = sum(snag == 0),
+            propwood = wood/npoints) %>% as.data.frame()
+
+# Test for significant differences
+chisq.test(summary_stratumpool[,c("wood", "nowood")])
+
+# Confidence intervals
+cis <- BinomCI(summary_stratumpool$wood, n = summary_stratumpool$npoints, conf.level = 0.95) %>% as.data.frame()
+summary_stratumpool <- summary_stratumpool %>% mutate(lwr.ci = cis$lwr.ci,
+                                                      upr.ci = cis$upr.ci)
+row.names(summary_stratumpool) <- NULL
+
+# Plot
+summary_stratumpool %>% ggplot(aes(x = stratum, y = propwood, color = pool))+
+  geom_point(size = 3,
+             position = position_dodge(width = 0.3))+
+  geom_errorbar(aes(ymin = lwr.ci, ymax = upr.ci),
+                width = 0, size = 1.2, position = position_dodge(width = 0.3))+
+  theme_minimal()+
+  theme(text = element_text(size = 16))+
+  ylab("Proportion of points with wood")+
+  xlab("Habitat Stratum")
+      
+```
+
