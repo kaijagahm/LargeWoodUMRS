@@ -1,0 +1,70 @@
+---
+title: "descriptive_stats"
+author: "Kaija Gahm"
+date: "1/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Source libraries and functions
+```{r}
+source("Analysis/R_scripts/libraries.R")
+source("Analysis/R_scripts/ownfunctions.R")
+```
+
+# Load data (combined upper/lower river)
+```{r}
+load("Analysis/data/outputs/sites_upperlower.Rda")
+load("Analysis/data/outputs/sites_ur.Rda")
+load("Analysis/data/outputs/sites_lr.Rda")
+```
+
+# Data Cleaning
+## Remove the river mile column
+```{r}
+sites_upperlower <- sites_upperlower %>% select(-river_mile)
+```
+
+## Exclude strata: BWC-O and MCB-W
+```{r}
+sites_upperlower <- sites_upperlower %>% filter(stratum %notin% c("BWC-O", "MCB-W")) %>% droplevels()
+```
+
+## Exclude sites NA for snag and/or pool
+```{r}
+sites_upperlower <- sites_upperlower %>% filter(!is.na(snag), !is.na(pool))
+```
+
+# Summaries
+## Overall
+```{r}
+summary_all <- sites_upperlower %>% summarize(npoints = n(),
+                                              wood = sum(snag == 1),
+                                              nowood = sum(snag == 0),
+                                              propwood = wood/npoints)
+```
+
+## By pool
+```{r}
+summary_bypool <- sites_upperlower %>% 
+  group_by(pool) %>%
+  summarize(npoints = n(),
+            wood = sum(snag == 1),
+            nowood =  sum(snag == 0),
+            propwood = wood/npoints)
+```
+
+## By year and pool
+```{r}
+summary_yearpool <- sites_upperlower %>% group_by(pool, year) %>%
+  summarize(npoints = n(),
+            wood = sum(snag == 1),
+            nowood =  sum(snag == 0),
+            propwood = wood/npoints)
+
+summary_yearpool %>% ggplot(aes(x = year, y = propwood, col = pool, group = pool))+
+  geom_line()
+```
