@@ -1,37 +1,47 @@
 ################################################################################################################################
 # 
 # Edited version of "descriptive_stats_clean.R" by Kaija Gahm, 11 Aug 2018 
+# Updated January 2020 by Kaija Gahm
 #
 # output: 
 #
 ################################################################################################################################
 
-setwd("//Igsarfebfslacr3/Users/mvanappledorn/My Documents/Manuscripts/REU_Manuscripts_Summer2018/CWD_SpaceTime")
+# Source libraries and functions
+source("Analysis/R_scripts/libraries.R")
+source("Analysis/R_scripts/ownfunctions.R")
 
-# Source libraries
-source("Coarse-Woody-Debris-master/libraries.R")
+# Load data (combined upper/lower river)
+load("Analysis/data/outputs/sites_upperlower.Rda")
 
-# Load data
-load("data/all_reduced_clean.Rda")
-load("data/all2_reduced_clean.Rda")
+# Data Cleaning
+## Remove the river mile column
+sites_upperlower <- sites_upperlower %>% select(-river_mile)
 
-# remove the river mile column from all_reduced_clean
-all_reduced_clean$river_mile <- NULL
+## Exclude strata: BWC-O and MCB-W
+sites_upperlower <- sites_upperlower %>% filter(stratum %notin% c("BWC-O", "MCB-W")) %>% droplevels()
 
-arc <- rbind(all_reduced_clean, all2_reduced_clean) # bind the two data sets together
-arc$pool <- factor(arc$pool, levels(arc$pool)[c(2, 3, 1, 4, 5, 6)]) # convert `pool` to factor and relevel
-locate.nas(arc) # NA's have already been removed. The column `near_forest_class` has also been removed. 
+## Exclude sites NA for snag
+sites_upperlower <- sites_upperlower %>% filter(!is.na(snag))
 
-#exclude BWC-O and MCB-W
-arc <- arc[which(arc$stratum %in% c("MCB-U","BWC-S","SCB","IMP-S")),]
-levels(arc$stratum) <- c("BWC-O","BWC","CBW-P","CTR","IMP","IMP","MCB-U","MCB-W","SCB","TWZ","UXO","TRI")
- all <- arc %>%
-   summarize(npoints=n(),
-             wood=sum(snag == 1),
-             nowood = sum(snag==0),
-             propwood = sum(snag == 1)/n()) %>%
-   as.data.frame()
- all
+# Summaries
+## Overall
+summary_all <- sites_upperlower %>% summarize(npoints = n(),
+                                              wood = sum(snag == 1),
+                                              nowood = sum(snag == 0),
+                                              propwood = wood/npoints)
+
+## By pool
+summary_bypool <- sites_upperlower %>% group_by(pool) %>%
+  summarize(npoints = n(),
+            wood = sum(snag == 1),
+            nowood =  sum(snag == 0),
+            propwood = wood/npoints)
+
+# UH OH-- MANY NA POOLS!
+
+
+
 
 
 # Summarize by year and pool
