@@ -452,9 +452,3 @@ sites_upperlower <- rbind(sites_lr, sites_ur)
 ```{r}
 #save(sites_upperlower, file = "../data/outputs/sites_upperlower.Rda")
 ```
-
-# Investigate NA pools
-```{r}
-sites_ur %>% filter(is.na(pool))
-```
-
