@@ -128,29 +128,20 @@ summary_stratumpool <- sites_upperlower %>% group_by(pool, stratum) %>%
                            values = c("#E41A1C", "#FF7F00", "#4DAF4A","#377EB8", "#984EA3",  "grey"))
                            #values = c("darkturquoise", "firebrick2", "royalblue4", "goldenrod2", "mediumorchid3", "black"))
       
-      
-      
-      
-      
-      
-      
-      
-      
-      
 # examine trends in stratum through time, by pool
-b.pys <- arc %>% 
+summary_poolyearstratum <- sites_upperlower %>% 
         group_by(pool, year, stratum) %>% 
         summarize(npoints = n(),
                   wood = sum(snag == 1),
                   nowood = sum(snag == 0),
-                  propwood = sum(snag ==1)/n()) %>%
+                  propwood = wood/npoints) %>%
         as.data.frame()
-      head(b.pys)   
+      head(summary_poolyearstratum)   
       
-      levels(b.pys$pool) <- c("P4","P8","P13","P26","LG","OR")
       
+## KJGG 10 Jan 2020: I don't know what these plots are trying to achieve or who created them. I've not transferred the code over to descriptive_stats.Rmd, but I'm leaving it here in case it was important.
       # Plot of proportions and confidence intervals by stratum and pool
-      my.plot <- ggplot(data = b.pys, aes(x = year, y = propwood))
+      my.plot <- ggplot(data = summary_poolyearstratum, aes(x = year, y = propwood))
       my.plot +
         geom_line(size = 1.5)+
         ylim(0,1)+
@@ -161,9 +152,9 @@ b.pys <- arc %>%
         #scale_color_manual(name = "Stratum", 
          #                  values = c("black", "black", "black","black", "black"))+
         geom_line(aes(linetype = stratum ))+
-        scale_linetype_manual(values = c("solid","dotted","dashed","twodash","dotdash"))+
+        scale_linetype_manual(values = c("solid","dotted","dashed","twodash","dotdash", "solid"))+
         theme(text = element_text(size = 20))+
-        facet_wrap(b.pys$pool)
+        facet_wrap(summary_poolyearstratum$pool)
       
       #      
       my.plot <- ggplot(data = b.pys, aes(x = year, y = propwood))#,color=stratum))
