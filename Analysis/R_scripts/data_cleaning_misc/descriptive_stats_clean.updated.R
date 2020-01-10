@@ -223,7 +223,7 @@ library(cpm)
 library(trend)
 library(ggplot2)
 
-levels(summary_yearpool$pool) <- c("P4","P8","P13","P26","LG","OR")
+levels(summary_yearpool$pool) <- c("ALT", "LAG", "OR1", "OR2", "P26", "P4", "P8", "P13")
 ggplot(summary_yearpool,aes(x=year,y=propwood)) + 
   geom_point() + 
   stat_smooth(method="loess",col="red") + 
@@ -231,7 +231,9 @@ ggplot(summary_yearpool,aes(x=year,y=propwood)) +
   theme(text = element_text(size = 20))+
   facet_wrap(summary_yearpool$pool)       
 
-p4 <- summary_yearpool[which(summary_yearpool$pool %in% "P4"),c(2,6)] 
+# P4 only
+p4 <- summary_yearpool %>% ungroup() %>% filter(pool == "P4") %>% select(year, propwood) %>% as.data.frame()
+
 plot(p4[,2]~p4[,1],pch=19)
 x <- p4[,1]
 y <- p4[,2]
