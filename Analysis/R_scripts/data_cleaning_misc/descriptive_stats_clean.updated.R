@@ -208,6 +208,14 @@ summary_poolyearstratum %>% filter(npoints > 9) %>%
                size=2.5)+
   facet_wrap(~pool)
 
+# Save data
+save(summary_all, file = "Analysis/data/outputs/summary_stats/summary_all.Rda")
+save(summary_pool, file = "Analysis/data/outputs/summary_stats/summary_pool.Rda")
+save(summary_poolyearstratum, file = "Analysis/data/outputs/summary_stats/summary_poolyearstratum.Rda")
+save(summary_stratum, file = "Analysis/data/outputs/summary_stats/summary_stratum.Rda")
+save(summary_stratumpool, file = "Analysis/data/outputs/summary_stats/summary_stratumpool.Rda")
+save(summary_yearpool, file = "Analysis/data/outputs/summary_stats/summary_yearpool.Rda")
+
 ##########################  
 # Examine as time series
 library(segmented)
