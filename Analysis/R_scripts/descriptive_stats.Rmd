@@ -146,3 +146,30 @@ summary_stratumpool %>% ggplot(aes(x = stratum, y = propwood, color = pool))+
       
 ```
 
+## By pool, year, and stratum
+```{r}
+# Summary
+summary_poolyearstratum <- sites_upperlower %>% 
+        group_by(pool, year, stratum) %>% 
+        summarize(npoints = n(),
+                  wood = sum(snag == 1),
+                  nowood = sum(snag == 0),
+                  propwood = wood/npoints) %>%
+        as.data.frame()
+head(summary_poolyearstratum)   
+
+# Plot of proportions by stratum and pool
+summary_poolyearstratum %>% ggplot(aes(x = year, y = propwood, group = stratum))+
+  geom_line(aes(col = stratum))+
+  ylim(0,1)+
+  theme_bw()+
+  xlab("Year")+
+  ylab("Proportion of points with wood")+
+  facet_wrap(~pool)
+```
+
+
+
+
+
+
