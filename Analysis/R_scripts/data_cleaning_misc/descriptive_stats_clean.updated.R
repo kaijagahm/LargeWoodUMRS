@@ -174,34 +174,44 @@ summary_poolyearstratum <- sites_upperlower %>%
  
       
       #subset b.pys to only include two most common strata
-      b.pys2 <- b.pys[which(b.pys$stratum %in% c("MCB-U","SCB")),]
-      my.plot <- ggplot(data = b.pys2, aes(x = year, y = propwood))#,color=stratum))
-      my.plot +
-        geom_line(size = .65,aes(linetype=stratum))+ #c("solid","twodash","longdash","dotted","dotdash"))+
-        ylim(0,1)+
+      # Plot of proportions by stratum and pool, only the two most common strata
+      summary_poolyearstratum %>% filter(stratum %in% c("MCB-U", "SCB")) %>%
+        ggplot(aes(x = year, y = propwood, group = stratum))+
+        geom_line(size = .65, aes(linetype = stratum))+
         theme_bw()+
         xlab("Year")+
         ylab("Proportion of points with wood")+
-        ggtitle("")+
-        theme(text = element_text(size = 20))+
-        facet_wrap(b.pys2$pool)
+        facet_wrap(~pool)
       
       
       
-    #Violin plots of annual variation by stratum and pool  
-    my.plot <- ggplot(b.pys, aes(x=stratum,y=propwood))
-    my.plot +
-      geom_violin() + 
-      geom_boxplot(width=0.1,fill="black",outlier.colour=NA)+
-      stat_summary(fun.y=median, geom="point",fill="white",shape=21, size=2.5)+
-      facet_wrap(b.pys$pool)
+    #Violin plots of annual variation by stratum and pool 
+      # All observations, by stratum and pool
+    summary_poolyearstratum %>% ggplot(aes(x = stratum, y = propwood))+
+      geom_violin()+
+      geom_boxplot(width = 0.1,
+                   fill = "black",
+                   outlier.color = NA)+
+      stat_summary(fun.y = median,
+                   geom = "point",
+                   fill = "white",
+                   shape = 21,
+                   size = 2.5)+
+      facet_wrap(~pool)
     
-    b.pys.gt10obs <- b.pys[which(b.pys$npoints > 9),]  
-    my.plot <- ggplot(b.pys.gt10obs, aes(x=pool,y=propwood))
-    my.plot +
-      geom_violin() + 
-      geom_boxplot(width=0.1,fill="black",outlier.colour=NA)+
-      stat_summary(fun.y=median, geom="point",fill="white",shape=21, size=2.5)
+    # Pools, including those with > 9 observations
+    summary_poolyearstratum %>% filter(npoints > 9) %>%
+      ggplot(aes(x = pool, y = propwood))+
+      geom_violin()+
+      geom_boxplot(width = 0.1,
+                   fill = "black",
+                   outlier.color = NA)+
+      stat_summary(fun.y = median,
+                   geom = "point",
+                   fill = "white",
+                   shape = 21,
+                   size = 2.5)
+
     
     my.plot <- ggplot(b.pys.gt10obs, aes(x=stratum,y=propwood))
     my.plot +
