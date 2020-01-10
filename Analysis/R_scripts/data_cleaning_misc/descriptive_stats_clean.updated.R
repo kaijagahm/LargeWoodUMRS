@@ -212,18 +212,20 @@ summary_poolyearstratum <- sites_upperlower %>%
                    shape = 21,
                    size = 2.5)
 
-    
-    my.plot <- ggplot(b.pys.gt10obs, aes(x=stratum,y=propwood))
-    my.plot +
-      geom_violin() + 
-      geom_boxplot(width=0.1,fill="black",outlier.colour=NA)+
-      stat_summary(fun.y=median, geom="point",fill="white",shape=21, size=2.5)+
-      facet_wrap(b.pys.gt10obs$pool)
-    
-      
-      
-           
-      
+    # Stratum and pool, greater than 10 observations
+    summary_poolyearstratum %>% filter(npoints > 9) %>%
+      ggplot(aes(x = stratum, y = propwood))+
+      geom_violin()+
+      geom_boxplot(width=0.1,
+                   fill="black",
+                   outlier.colour=NA)+
+      stat_summary(fun.y=median, 
+                   geom="point",
+                   fill="white",
+                   shape=21,
+                   size=2.5)+
+      facet_wrap(~pool)
+  
 ##########################  
 # Examine as time series
 library(segmented)
