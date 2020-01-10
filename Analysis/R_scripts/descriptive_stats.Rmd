@@ -160,8 +160,17 @@ head(summary_poolyearstratum)
 
 # Plot of proportions by stratum and pool
 summary_poolyearstratum %>% ggplot(aes(x = year, y = propwood, group = stratum))+
-  geom_line(aes(col = stratum))+
+  geom_line(aes(linetype = stratum))+
   ylim(0,1)+
+  theme_bw()+
+  xlab("Year")+
+  ylab("Proportion of points with wood")+
+  facet_wrap(~pool)
+
+# Plot of proportions by stratum and pool, only the two most common strata
+summary_poolyearstratum %>% filter(stratum %in% c("MCB-U", "SCB")) %>%
+  ggplot(aes(x = year, y = propwood, group = stratum))+
+  geom_line(size = .65, aes(linetype = stratum))+
   theme_bw()+
   xlab("Year")+
   ylab("Proportion of points with wood")+
