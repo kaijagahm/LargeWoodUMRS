@@ -175,7 +175,35 @@ summary_poolyearstratum %>% filter(stratum %in% c("MCB-U", "SCB")) %>%
   xlab("Year")+
   ylab("Proportion of points with wood")+
   facet_wrap(~pool)
+
+#Violin plots of annual variation by stratum and pool 
+      # All observations, by stratum and pool
+summary_poolyearstratum %>% ggplot(aes(x = stratum, y = propwood))+
+  geom_violin()+
+  geom_boxplot(width = 0.1,
+               fill = "black",
+               outlier.color = NA)+
+  stat_summary(fun.y = median,
+               geom = "point",
+               fill = "white",
+               shape = 21,
+               size = 2.5)+
+  facet_wrap(~pool)
+    
+    # Pools, including those with > 9 observations
+summary_poolyearstratum %>% filter(npoints > 9) %>%
+  ggplot(aes(x = pool, y = propwood))+
+  geom_violin()+
+  geom_boxplot(width = 0.1,
+               fill = "black",
+               outlier.color = NA)+
+  stat_summary(fun.y = median,
+               geom = "point",
+               fill = "white",
+               shape = 21,
+               size = 2.5)
 ```
+
 
 
 
