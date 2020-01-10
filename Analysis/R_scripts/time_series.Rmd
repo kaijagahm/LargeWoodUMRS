@@ -9,22 +9,35 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+# Load libraries
+```{r echo = F}
+source("../R_scripts/libraries.R")
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+# Load data
+## Sites
+```{r}
+load("../data/outputs/sites_upperlower.Rda")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Summary stats
+```{r}
+filenames <- list.files("../data/outputs/summary_stats/", full.names = T)
+for(i in 1:length(filenames)){
+  load(filenames[i])
+}
+```
+
+# Visualization
+## Time series by pool
+```{r}
+summary_yearpool %>% ggplot(aes(x = year, y = propwood))+
+  geom_point()+
+  stat_smooth(method = "loess", col = "red")+
+  theme_bw()+
+  theme(text = element_text(size = 20))+
+  facet_wrap(~pool)
+     
+```
+
+
