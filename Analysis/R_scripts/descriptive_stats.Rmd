@@ -89,9 +89,9 @@ summary_stratum <- sites_upperlower %>% group_by(stratum) %>%
             propwood = wood/npoints)
 
 # Calculate confidence intervals for these proportions
-      cis <- BinomCI(summary_stratum$wood, n = summary_stratum$npoints, conf.level = 0.95)
-      summary_stratum <- cbind(summary_stratum, cis[,2:3])
-      row.names(summary_stratum) <- NULL
+cis <- BinomCI(summary_stratum$wood, n = summary_stratum$npoints, conf.level = 0.95)
+summary_stratum <- cbind(summary_stratum, cis[,2:3])
+row.names(summary_stratum) <- NULL
 
 # Test for significant differences
 chisq.test(summary_stratum[,c("wood", "nowood")])
@@ -143,19 +143,19 @@ summary_stratumpool %>% ggplot(aes(x = stratum, y = propwood, color = pool))+
   theme(text = element_text(size = 16))+
   ylab("Proportion of points with wood")+
   xlab("Habitat Stratum")
-      
+
 ```
 
 ## By pool, year, and stratum
 ```{r}
 # Summary
 summary_poolyearstratum <- sites_upperlower %>% 
-        group_by(pool, year, stratum) %>% 
-        summarize(npoints = n(),
-                  wood = sum(snag == 1),
-                  nowood = sum(snag == 0),
-                  propwood = wood/npoints) %>%
-        as.data.frame()
+  group_by(pool, year, stratum) %>% 
+  summarize(npoints = n(),
+            wood = sum(snag == 1),
+            nowood = sum(snag == 0),
+            propwood = wood/npoints) %>%
+  as.data.frame()
 head(summary_poolyearstratum)   
 
 # Plot of proportions by stratum and pool
@@ -177,7 +177,7 @@ summary_poolyearstratum %>% filter(stratum %in% c("MCB-U", "SCB")) %>%
   facet_wrap(~pool)
 
 #Violin plots of annual variation by stratum and pool 
-      # All observations, by stratum and pool
+# All observations, by stratum and pool
 summary_poolyearstratum %>% ggplot(aes(x = stratum, y = propwood))+
   geom_violin()+
   geom_boxplot(width = 0.1,
@@ -189,8 +189,8 @@ summary_poolyearstratum %>% ggplot(aes(x = stratum, y = propwood))+
                shape = 21,
                size = 2.5)+
   facet_wrap(~pool)
-    
-    # Pools, including those with > 9 observations
+
+# Pools, including those with > 9 observations
 summary_poolyearstratum %>% filter(npoints > 9) %>%
   ggplot(aes(x = pool, y = propwood))+
   geom_violin()+
@@ -202,6 +202,20 @@ summary_poolyearstratum %>% filter(npoints > 9) %>%
                fill = "white",
                shape = 21,
                size = 2.5)
+
+# Stratum and pool, greater than 10 observations
+summary_poolyearstratum %>% filter(npoints > 9) %>%
+  ggplot(aes(x = stratum, y = propwood))+
+  geom_violin()+
+  geom_boxplot(width=0.1,
+               fill="black",
+               outlier.colour=NA)+
+  stat_summary(fun.y=median, 
+               geom="point",
+               fill="white",
+               shape=21,
+               size=2.5)+
+  facet_wrap(~pool)
 ```
 
 
