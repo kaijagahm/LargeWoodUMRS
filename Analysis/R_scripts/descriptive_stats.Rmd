@@ -73,7 +73,7 @@ summary_yearpool <- sites_upperlower %>% group_by(pool, year) %>%
   dplyr::summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood =  sum(snag == 0),
-            propwood = wood/npoints)
+            propwood = wood/npoints) %>% ungroup()
 
 # Plot
 summary_yearpool %>% ggplot(aes(x = year, y = propwood, col = pool, group = pool))+
@@ -226,13 +226,98 @@ summary_poolyearstratum %>% filter(npoints > 9) %>%
 ylims <- c(0,1)
 ```
 
-## P4
-### Exploratory
+## Overall
+### Examine by pool
+```{r}
+summary_yearpool %>% ggplot(aes(x = as.numeric(year), y = propwood))+
+  geom_point()+
+  stat_smooth(method = "loess", col = "red", se = F)+
+  theme(text = element_text(size = 20))+
+  facet_wrap(~pool)
+```
+
+### Pool 4
+#### All years
+```{r}
+p4 <- summary_yearpool %>% filter(pool == "P04") %>% dplyr::select(year, propwood) %>% mutate(year = as.numeric(year))
+plot(propwood ~ year, data = p4, pch = 19)
+x <- p4$year
+y <- p4$propwood
+lin.mod <- lm(y ~ x)
+seg.mod <- segmented(lin.mod, seg.Z = ~x, data = p4, psi = 1999) # singular
+
+plot(y ~ x, 
+     pch = 19, 
+     cex = 1.5, 
+     xlab = "Year",
+     ylab = "Proportion with LW",
+     main = "Pool 4")
+plot(seg.mod, add = T)
+```
+
+#### After 1999
+```{r}
+p4b <- p4 %>% filter(year >= 1999)
+x <- p4b$year
+y <- p4b$propwood
+lin.mod <- lm(y ~ x)
+plot(y ~ x, pch = 19,
+     cex = 1.5,
+     xlab = "Year",
+     ylab = "Proportion with LW",
+     main = "Pool 4")
+abline(lin.mod)
+
+p4b %>% ggplot(aes(x = year, y = propwood))+
+  geom_point()+
+  stat_smooth(method = "lm", col = "red")+
+  theme_minimal()
+```
+
+#### Tests
+```{r}
+pettitt.test(p4$propwood)  #first 6 points is separate
+mk.test(p4$propwood) #monotonic trend? 
+```
+#### Mean before change
+```{r}
+plot(propwood ~ year, data = p4,
+     pch = 19,
+     cex = 1.5,
+     ylim = ylims,
+     xlab = "Year",
+     ylab = "Proportion with LW",
+     main = "Pool 4",
+     cex.lab = 1.5,
+     cex.axis = 1.25)
+abline(v = 1998.5, col = "red", lwd = 3, lty = 2)
+
+lm1 <- lm(propwood ~ year, data = p4[1:6,])
+x0 = 1992.5
+y0 = (x0 * lm1$coefficients[[2]]) + lm1$coefficients[[1]]
+x1 = 1998.5
+y1 = (x1 * lm1$coefficients[[2]] + lm1$coefficients [[1]])
+         #segments(x0,y0,x1,y1,lty=1,lwd=3,col="darkgrey")
+summary(lm1)
+mn <- p4[1:6,] %>% pull(propwood) %>% mean()
+
+segments(x0, mn, x1, mn, lwd = 3, lty = 2, col = "darkgrey")
+text(1995, 0.25, labels = "mean = 0.487", cex = 1.5) # 2/15/20 THIS IS NO LONGER CORRECT
+```
+
+
+
+
+
+
+## Aquatic areas by pool
+### P4
+#### Exploratory
 ```{r}
 p4 <- summary_poolyearstratum %>% filter(pool == "P04") %>% dplyr::select(year, stratum, propwood)
 
   # exploratory first...
-  p4 %>% ggplot(aes(x = year, y = propwood))+
+  p4 %>% ggplot(aes(x = as.numeric(year), y = propwood))+
     geom_point()+
     stat_smooth(method = "loess", col = "red")+
     theme_minimal()+
@@ -253,7 +338,7 @@ p4 <- summary_poolyearstratum %>% filter(pool == "P04") %>% dplyr::select(year, 
   mk.test(p4.scb$propwood) # monotonic trend?
 ```
 
-### Plots for export
+#### Plots for export
 ```{r}
 #Plot for export
 ah.pch <- c(NA, 3, NA, NA, NA, 19, NA, 1)[as.numeric(p4$stratum)]
