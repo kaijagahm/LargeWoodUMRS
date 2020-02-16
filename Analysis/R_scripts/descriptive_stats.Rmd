@@ -25,7 +25,8 @@ load("../data/outputs/sites_lr.Rda")
 # Data Cleaning
 ## Remove the river mile column
 ```{r}
-sites_upperlower <- sites_upperlower %>% select(-river_mile)
+head(sites_upperlower)
+sites_upperlower <- sites_upperlower %>% dplyr::select(-river_mile)
 ```
 
 ## Exclude strata: BWC-O and MCB-W
@@ -41,7 +42,7 @@ sites_upperlower <- sites_upperlower %>% filter(!is.na(snag), !is.na(pool))
 # Summaries
 ## Overall
 ```{r}
-summary_all <- sites_upperlower %>% summarize(npoints = n(),
+summary_all <- sites_upperlower %>% dplyr::summarize(npoints = n(),
                                               wood = sum(snag == 1),
                                               nowood = sum(snag == 0),
                                               propwood = wood/npoints)
@@ -52,7 +53,7 @@ summary_all <- sites_upperlower %>% summarize(npoints = n(),
 # Summary
 summary_pool <- sites_upperlower %>% 
   group_by(pool) %>%
-  summarize(npoints = n(),
+  dplyr::summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood =  sum(snag == 0),
             propwood = wood/npoints)
@@ -69,21 +70,22 @@ pairwise.prop.test(x = summary_pool$wood, n = summary_pool$npoints,
 ```{r}
 # Summary
 summary_yearpool <- sites_upperlower %>% group_by(pool, year) %>%
-  summarize(npoints = n(),
+  dplyr::summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood =  sum(snag == 0),
             propwood = wood/npoints)
 
 # Plot
 summary_yearpool %>% ggplot(aes(x = year, y = propwood, col = pool, group = pool))+
-  geom_line()
+  geom_line()+
+  theme_minimal()
 ```
 
 ## By stratum
 ```{r}
 # Summary
 summary_stratum <- sites_upperlower %>% group_by(stratum) %>% 
-  summarize(npoints = n(),
+  dplyr::summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood = sum(snag == 0),
             propwood = wood/npoints)
@@ -97,7 +99,7 @@ row.names(summary_stratum) <- NULL
 chisq.test(summary_stratum[,c("wood", "nowood")])
 
 # Post-hoc test with Bonferroni correction
-pairwise.prop.test(x = summary_bypool$wood, n = summary_bypool$npoints, 
+pairwise.prop.test(x = summary_pool$wood, n = summary_pool$npoints, 
                    p.adjust.method = "bonferroni")
 
 # Plot of proportions and confidence intervals by stratum
@@ -107,7 +109,7 @@ summary_stratum %>% ggplot(aes(x = stratum, y = propwood))+
                     ymax = upr.ci),
                 width = 0,
                 size = 1.2)+
-  theme_bw()+
+  theme_minimal()+
   theme(text = element_text(size = 16))+
   ylab("Proportion of points with wood")+
   xlab("Habitat Stratum")+
@@ -119,7 +121,7 @@ summary_stratum %>% ggplot(aes(x = stratum, y = propwood))+
 ```{r}
 # Summary
 summary_stratumpool <- sites_upperlower %>% group_by(pool, stratum) %>%
-  summarize(npoints = n(),
+  dplyr::summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood = sum(snag == 0),
             propwood = wood/npoints) %>% as.data.frame()
@@ -151,7 +153,7 @@ summary_stratumpool %>% ggplot(aes(x = stratum, y = propwood, color = pool))+
 # Summary
 summary_poolyearstratum <- sites_upperlower %>% 
   group_by(pool, year, stratum) %>% 
-  summarize(npoints = n(),
+  dplyr::summarize(npoints = n(),
             wood = sum(snag == 1),
             nowood = sum(snag == 0),
             propwood = wood/npoints) %>%
@@ -162,7 +164,7 @@ head(summary_poolyearstratum)
 summary_poolyearstratum %>% ggplot(aes(x = year, y = propwood, group = stratum))+
   geom_line(aes(linetype = stratum))+
   ylim(0,1)+
-  theme_bw()+
+  theme_minimal()+
   xlab("Year")+
   ylab("Proportion of points with wood")+
   facet_wrap(~pool)
@@ -171,7 +173,7 @@ summary_poolyearstratum %>% ggplot(aes(x = year, y = propwood, group = stratum))
 summary_poolyearstratum %>% filter(stratum %in% c("MCB-U", "SCB")) %>%
   ggplot(aes(x = year, y = propwood, group = stratum))+
   geom_line(size = .65, aes(linetype = stratum))+
-  theme_bw()+
+  theme_minimal()+
   xlab("Year")+
   ylab("Proportion of points with wood")+
   facet_wrap(~pool)
@@ -218,7 +220,31 @@ summary_poolyearstratum %>% filter(npoints > 9) %>%
   facet_wrap(~pool)
 ```
 
+# Time series
+```{r}
+p4 <- summary_poolyearstratum %>% filter(pool == "P04") %>% dplyr::select(year, stratum, propwood)
 
+  # exploratory first...
+  p4 %>% ggplot(aes(x = year, y = propwood))+
+    geom_point()+
+    stat_smooth(method = "loess", col = "red")+
+    theme_minimal()+
+    theme(text = element_text(size = 20))+
+    facet_wrap(~stratum)
+  
+  # examine habitats separately
+  p4.bwc <- p4 %>% filter(stratum == "BWC-S")
+  pettitt.test(p4.bwc$propwood) # first 6 points is separate [edit 2/15/20: i don't know how to interpret this test, just reproducing the comments as they were before.]
+  mk.test(p4.bwc$propwood) # monotonic trend?
+  
+  p4.mcb <- p4 %>% filter(stratum == "MCB-U")
+  pettitt.test(p4.mcb$propwood) # first 6 points is separate 
+  mk.test(p4.mcb$propwood) # monotonic trend?
+
+  p4.scb <- p4 %>% filter(stratum == "SCB")
+  pettitt.test(p4.scb$propwood) # first 6 points is separate 
+  mk.test(p4.scb$propwood) # monotonic trend?
+```
 
 
 
