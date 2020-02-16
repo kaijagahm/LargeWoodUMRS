@@ -226,6 +226,14 @@ summary_poolyearstratum %>% filter(npoints > 9) %>%
 ylims <- c(0,1)
 ```
 
+## Function for making models
+```{r}
+makemod <- function(model, x){
+  y0 <- (x0 * model$coefficients[[2]]) + model$coefficients[[1]]
+  return(y0)
+}
+```
+
 ## Overall
 ### Examine by pool
 ```{r}
@@ -295,9 +303,9 @@ abline(v = 1998.5, col = "red", lwd = 3, lty = 2)
 
 lm1 <- lm(propwood ~ year, data = p4[1:6,])
 x0 <- 1992.5
-y0 <- (x0 * lm1$coefficients[[2]]) + lm1$coefficients[[1]]
+y0 <- makemod(lm1, x0)
 x1 <- 1998.5
-y1 <- (x1 * lm1$coefficients[[2]] + lm1$coefficients [[1]])
+y1 <- makemod(lm1, x1)
          #segments(x0,y0,x1,y1,lty=1,lwd=3,col="darkgrey")
 summary(lm1)
 mn <- p4[1:6,] %>% pull(propwood) %>% mean()
@@ -307,9 +315,9 @@ text(1995, 0.25, labels = "mean = 0.487", cex = 1.5) # 2/15/20 THIS IS NO LONGER
 
 lm2 <- lm(propwood ~ year, data = p4[7:nrow(p4),])
 x0 <- 1998.5
-y0 <- (x0 * lm2$coefficients[[2]]) + lm2$coefficients[[1]]
+y0 <- makemod(lm2, x0)
 x1 <- 2017.5
-y1 <- (x1 * lm2$coefficients[[2]]) + lm2$coefficients[[1]]
+y1 <- makemod(lm2, x1)
       #segments(x0,y0,x1,y1,lty=1,lwd=3,col="darkgrey")
 mn <- p4[7:nrow(p4),] %>% pull(propwood) %>% mean()
 segments(x0, mn, x1, mn, lwd = 3, lty = 2, col = "darkgrey")
@@ -318,6 +326,89 @@ points(propwood ~ year, data = p4, pch = 19, cex = 1.75)
 mn
 summary(lm2)
 ```
+
+### Pool 8
+#### All years
+```{r}
+p8 <- summary_yearpool %>% filter(pool == "P08") %>% dplyr::select(year, propwood) %>% mutate(year = as.numeric(year))
+plot(propwood ~ year, data = p8, pch = 19)
+x <- p8$year
+y <- p8$propwood
+lin.mod <- lm(y ~ x)
+seg.mod <- segmented(lin.mod, seg.Z = ~x, psi = 2003)
+
+plot(y ~ x, pch = 19,
+     cex = 1.5,
+     xlab = "Year",
+     ylab = "Proportion with LW",
+     main = "Pool 8",
+     cex.lab = 1.5,
+     cex.axis = 1.25)
+plot(seg.mod, add = T)
+summary(seg.mod)
+pettitt.test(p8$propwood) # first 6 points is separate
+mk.test(p8$propwood) # monotonic trend? yes, highly significant trend
+
+plot(propwood ~ year, data = p8,
+     pch = 19,
+     cex = 1.75,
+     xlab = "Year",
+     ylab = "Proportion with LW",
+     main = "Pool 8",
+     cex.lab = 1.5,
+     cex.axis = 1.25,
+     ylim = ylims)
+abline(v = 2003.5, col = "red", lwd = 3, lty = 2)
+lm1 <- lm(propwood ~ year, data = p8[1:10,])
+x0 <- 1992.5
+y0 <- makemod(lm1, x0)
+x1 <- 2003.5
+y1 <- makemod(lm1, x1)
+segments(x0, y0, x1, y1, lty = 1, lwd = 3, col = "black")
+summary(lm1)
+mn <- p8[1:10,] %>% pull(propwood) %>% mean()
+    # text(1996.5,0.9,labels="*",cex=8,col="black")
+text(1999, 0.94, labels = "slope = -0.029", cex = 1.5, col = "black")
+text(1999, 0.87, labels = "p = 0.020", cex = 1.5, col = "black")
+text(1999, 0.8, bquote(r^2 == 0.525), cex = 1.5)
+
+lm2 <- lm(propwood ~ year, data = p8[11:nrow(p8),])
+x0 <- 2003.5
+y0 <- makemod(lm2, x0)
+x1 <- 2017.5
+y1 <- makemod(lm2, x1)
+     #segments(x0,y0,x1,y1,lty=1,lwd=3,col="darkgrey")
+mn <- p8[11:nrow(p8),] %>% pull(propwood) %>% mean()
+segments(x0, mn, x1, mn, col = "darkgrey", lwd = 3, lty = 2)
+text(2011, 0.75, labels = "mean = 0.430", cex = 1.5, col = "black")
+
+lm3 <- lin.mod # back to the full dataset
+abline(lm3, col = "black", lwd = 1.5)
+text(1994, 0.5, labels = "slope = -0.144", cex = 1.25)
+text(1994, 0.44, labels = "p < 0.001", cex = 1.25)
+text(1994, 0.38, bquote(r^2 == 0.594), cex = 1.25) #labels="r2 = 0.525",cex=1.25)
+
+points(propwood ~ year, data = p8, pch = 19, cex = 1.75)     
+```
+
+
+
+
+
+
+#### Tests
+```{r}
+
+```
+
+#### Mean before change
+```{r}
+
+```
+
+
+
+
 
 
 
