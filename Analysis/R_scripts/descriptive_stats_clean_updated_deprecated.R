@@ -427,6 +427,10 @@ ggplot(b.yp,aes(x=year,y=propwood)) +
      text(2015,0.9,labels="mean = 0.594",cex=1.5)
      
      
+# GOT TO HERE WITH CODE EDITING 15 FEB 2020
+     
+     
+     
     lg <- b.yp[which(b.yp$pool %in% "LG"),c(2,6)]  
      plot(lg[,2]~lg[,1],pch=19)
      x <- lg[,1]
