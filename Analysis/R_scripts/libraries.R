@@ -38,7 +38,7 @@ library(lme4)
 library(effects)
 library(stringr)
 library(DescTools)
-library(segmented)
-library(cpm)
-library(trend)
+library(segmented) # for time series
+library(cpm) # for time series
+library(trend) # for time series
 
