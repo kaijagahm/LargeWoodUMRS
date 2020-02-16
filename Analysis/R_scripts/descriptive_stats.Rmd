@@ -279,6 +279,7 @@ p4b %>% ggplot(aes(x = year, y = propwood))+
 pettitt.test(p4$propwood)  #first 6 points is separate
 mk.test(p4$propwood) #monotonic trend? 
 ```
+
 #### Mean before change
 ```{r}
 plot(propwood ~ year, data = p4,
@@ -293,16 +294,29 @@ plot(propwood ~ year, data = p4,
 abline(v = 1998.5, col = "red", lwd = 3, lty = 2)
 
 lm1 <- lm(propwood ~ year, data = p4[1:6,])
-x0 = 1992.5
-y0 = (x0 * lm1$coefficients[[2]]) + lm1$coefficients[[1]]
-x1 = 1998.5
-y1 = (x1 * lm1$coefficients[[2]] + lm1$coefficients [[1]])
+x0 <- 1992.5
+y0 <- (x0 * lm1$coefficients[[2]]) + lm1$coefficients[[1]]
+x1 <- 1998.5
+y1 <- (x1 * lm1$coefficients[[2]] + lm1$coefficients [[1]])
          #segments(x0,y0,x1,y1,lty=1,lwd=3,col="darkgrey")
 summary(lm1)
 mn <- p4[1:6,] %>% pull(propwood) %>% mean()
 
 segments(x0, mn, x1, mn, lwd = 3, lty = 2, col = "darkgrey")
 text(1995, 0.25, labels = "mean = 0.487", cex = 1.5) # 2/15/20 THIS IS NO LONGER CORRECT
+
+lm2 <- lm(propwood ~ year, data = p4[7:nrow(p4),])
+x0 <- 1998.5
+y0 <- (x0 * lm2$coefficients[[2]]) + lm2$coefficients[[1]]
+x1 <- 2017.5
+y1 <- (x1 * lm2$coefficients[[2]]) + lm2$coefficients[[1]]
+      #segments(x0,y0,x1,y1,lty=1,lwd=3,col="darkgrey")
+mn <- p4[7:nrow(p4),] %>% pull(propwood) %>% mean()
+segments(x0, mn, x1, mn, lwd = 3, lty = 2, col = "darkgrey")
+text(2009, 0.45, labels = "mean = 0.730", cex = 1.5)
+points(propwood ~ year, data = p4, pch = 19, cex = 1.75)
+mn
+summary(lm2)
 ```
 
 
