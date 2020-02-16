@@ -454,7 +454,40 @@ lm2
 ### Pool 26
 #### All years
 ```{r}
+p26 <- summary_yearpool %>% filter(pool == "P26") %>% dplyr::select(year, propwood) %>% mutate(year = as.numeric(year))
 
+plot(propwood ~ year, data = p26, pch = 19)
+x <- p26$year
+y <- p26$propwood
+lin.mod <- lm(y ~ x)
+seg.mod <- segmented(lin.mod, seg.Z = ~x, psi = 2000)
+
+plot(y ~ x, pch = 19,
+     cex = 1.5,
+     xlab = "Year",
+     ylab = "Proportion with LW",
+     main = "Pool 26")
+plot(seg.mod, add = T)
+summary(seg.mod)
+summary(lin.mod)
+slope(seg.mod)
+
+pettitt.test(p26$propwood) # break in mean? NO
+mk.test(p26$propwood) # monotonic trend? NO
+(mean1 <- mean(p26$propwood)) #No trends/breaks whatsoever
+     
+plot(propwood ~ year, data = p26,
+     pch = 19,
+     cex = 1.75,
+     xlab = "Year",
+     ylab = "Proportion with LW",
+     main = "Pool 26",
+     cex.lab = 1.5,
+     cex.axis = 1.25,
+     ylim = ylims)
+abline(h = mean(p26$propwood), col = "darkgrey", lwd = 2, lty = 2)
+points(propwood ~ year, data = p26, pch = 19, cex = 1.75)
+text(2015, 0.9, labels = "mean = 0.594", cex = 1.5)   
 ```
 
 
