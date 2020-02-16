@@ -221,6 +221,13 @@ summary_poolyearstratum %>% filter(npoints > 9) %>%
 ```
 
 # Time series
+## Set plotting parameters
+```{r}
+ylims <- c(0,1)
+```
+
+## P4
+### Exploratory
 ```{r}
 p4 <- summary_poolyearstratum %>% filter(pool == "P04") %>% dplyr::select(year, stratum, propwood)
 
@@ -244,6 +251,26 @@ p4 <- summary_poolyearstratum %>% filter(pool == "P04") %>% dplyr::select(year, 
   p4.scb <- p4 %>% filter(stratum == "SCB")
   pettitt.test(p4.scb$propwood) # first 6 points is separate 
   mk.test(p4.scb$propwood) # monotonic trend?
+```
+
+### Plots for export
+```{r}
+#Plot for export
+ah.pch <- c(NA, 3, NA, NA, NA, 19, NA, 1)[as.numeric(p4$stratum)]
+plot(propwood ~ year, 
+     data = p4, 
+     cex = 1.75,
+     xlab = "Year",
+     ylab = "Proportion with LW",
+     main = "Pool 4",
+     cex.lab = 1.5,
+     cex.axis = 1.25,
+     ylim = ylims,
+     pch = ah.pch)
+abline(v = 1998.5, col = "black", lty = 1, lwd = 1) #MCB - or lwd = 3?
+abline(v = 1998.5, col = "grey", lty = 2, lwd = 1) #BWC
+abline(v = 2000.5, col = "grey", lty = 1, lwd = 1) # SCB
+points(propwood ~ year, data = p4, cex = 1.75, pch = ah.pch) # Kaija 2/15/20: why is this necessary if we already specified the points and point types in the original plot call?
 ```
 
 
