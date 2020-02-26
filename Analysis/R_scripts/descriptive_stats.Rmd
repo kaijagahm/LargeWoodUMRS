@@ -261,13 +261,15 @@ lin.mod <- lm(propwood ~ year, data = p4)
 seg.mod <- segmented(lin.mod, data = p4, psi = 1999) # singular
 p4$seg_fit <- broken.line(seg.mod)$fit # add fitted values to the data frame.
 
-p4 %>% ggplot(aes(x = year, y = propwood))+
+baseplot_p4 <- p4 %>% ggplot(aes(x = year, y = propwood))+
   geom_point()+
-  geom_line(aes(y = seg_fit), lwd = 0.3)+
-  theme_minimal()+
+  ylim(0, 1)+
   xlab("Year")+
   ylab("Proportion with LW")+
-  ggtitle("Pool 4") 
+  ggtitle("Pool 4")+
+  theme_minimal()
+
+baseplot_p4 + geom_line(aes(y = seg_fit), lwd = 0.3)
 
 plot(y ~ x, # compare this to the above for how they connect the lines... weird that it's different.
      pch = 19, 
@@ -281,31 +283,32 @@ plot(seg.mod, add = T)
 #### After 1999
 ```{r}
 p4b <- p4 %>% filter(year >= 1999)
-x <- p4b$year
-y <- p4b$propwood
-lin.mod <- lm(y ~ x)
-plot(y ~ x, pch = 19,
-     cex = 1.5,
-     xlab = "Year",
-     ylab = "Proportion with LW",
-     main = "Pool 4")
-abline(lin.mod)
 
 p4b %>% ggplot(aes(x = year, y = propwood))+
   geom_point()+
-  stat_smooth(method = "lm", col = "red")+
+  stat_smooth(method = "lm", col = "red", lwd = 0.3, se = F)+
   theme_minimal()
 ```
 
 #### Tests
 ```{r}
-pettitt.test(p4$propwood)  #first 6 points is separate
-mk.test(p4$propwood) #monotonic trend? 
+pt <- pettitt.test(p4$propwood)  
+str(pt)
+(changepoint <- pt$estimate) # First 8 points separate
+changeyear <- mean(c(p4$year[changepoint], p4$year[changepoint+1])) # get year for change in means
+
+mk.test(p4$propwood) # Monotonic trend? [INTERPRETATION?]
 ```
 
 #### Mean before change
 ```{r}
-plot(propwood ~ year, data = p4,
+baseplot_p4 + geom_vline(aes(xintercept = changeyear), 
+                         col = "red",
+                         lty = 2)
+
+
+
+plot(propwood ~ year,data = p4,
      pch = 19,
      cex = 1.5,
      ylim = ylims,
@@ -316,17 +319,35 @@ plot(propwood ~ year, data = p4,
      cex.axis = 1.25)
 abline(v = 1998.5, col = "red", lwd = 3, lty = 2)
 
-lm1 <- lm(propwood ~ year, data = p4[1:6,])
-x0 <- 1992.5
-y0 <- makemod(lm1, x0)
-x1 <- 1998.5
-y1 <- makemod(lm1, x1)
-         #segments(x0,y0,x1,y1,lty=1,lwd=3,col="darkgrey")
+lm1 <- lm(propwood ~ year, data = p4[1:changepoint,])
+begyear <- 1992.5 # where does this come from?
+y0 <- makemod(lm1, begyear)
+y1 <- makemod(lm1, changeyear)
 summary(lm1)
-mn <- p4[1:6,] %>% pull(propwood) %>% mean()
+mn <- p4[1:changepoint,] %>% pull(propwood) %>% mean()
 
-segments(x0, mn, x1, mn, lwd = 3, lty = 2, col = "darkgrey")
+segments(begyear, mn, changeyear, mn, lwd = 3, lty = 2, col = "darkgrey")
 text(1995, 0.25, labels = "mean = 0.487", cex = 1.5) # 2/15/20 THIS IS NO LONGER CORRECT
+
+
+baseplot_p4 + geom_vline(aes(xintercept = changeyear), 
+                         col = "red",
+                         lty = 2) + 
+  geom_segment(aes(x = begyear, y = mn, xend = changeyear, yend = mn),
+               lty = 2,
+               col = "darkgrey")+
+  geom_text(aes(x = 1995, 
+                y = mn-0.05, 
+                label = paste0("mean = ", round(mn, 2))),
+            size = 4,
+            col = "darkgrey",
+            check_overlap = T)
+
+
+
+
+
+
 
 lm2 <- lm(propwood ~ year, data = p4[7:nrow(p4),])
 x0 <- 1998.5
