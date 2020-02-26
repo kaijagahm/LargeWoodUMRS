@@ -218,6 +218,11 @@ summary_poolyearstratum %>% filter(npoints > 9) %>%
                shape=21,
                size=2.5)+
   facet_wrap(~pool)
+
+table(summary_poolyearstratum$stratum)
+summary_poolyearstratum %>% filter(pool == "P04", stratum == "BWC-S") %>% 
+  ggplot(aes(x = year, y = propwood))+
+  geom_point()
 ```
 
 # Time series
@@ -240,21 +245,31 @@ makemod <- function(model, x){
 summary_yearpool %>% ggplot(aes(x = as.numeric(year), y = propwood))+
   geom_point()+
   stat_smooth(method = "loess", col = "red", se = F)+
-  theme(text = element_text(size = 20))+
-  facet_wrap(~pool)
+  facet_wrap(~pool)+
+  xlab("Year")+
+  ylab("Proportion with LW")
 ```
 
 ### Pool 4
 #### All years
 ```{r}
 p4 <- summary_yearpool %>% filter(pool == "P04") %>% dplyr::select(year, propwood) %>% mutate(year = as.numeric(year))
-plot(propwood ~ year, data = p4, pch = 19)
-x <- p4$year
-y <- p4$propwood
-lin.mod <- lm(y ~ x)
-seg.mod <- segmented(lin.mod, seg.Z = ~x, data = p4, psi = 1999) # singular
+p4 %>% ggplot(aes(x = year, y = propwood))+
+  geom_point()
 
-plot(y ~ x, 
+lin.mod <- lm(propwood ~ year, data = p4)
+seg.mod <- segmented(lin.mod, data = p4, psi = 1999) # singular
+p4$seg_fit <- broken.line(seg.mod)$fit # add fitted values to the data frame.
+
+p4 %>% ggplot(aes(x = year, y = propwood))+
+  geom_point()+
+  geom_line(aes(y = seg_fit), lwd = 0.3)+
+  theme_minimal()+
+  xlab("Year")+
+  ylab("Proportion with LW")+
+  ggtitle("Pool 4") 
+
+plot(y ~ x, # compare this to the above for how they connect the lines... weird that it's different.
      pch = 19, 
      cex = 1.5, 
      xlab = "Year",
@@ -336,6 +351,7 @@ x <- p8$year
 y <- p8$propwood
 lin.mod <- lm(y ~ x)
 seg.mod <- segmented(lin.mod, seg.Z = ~x, psi = 2003)
+summary(seg.mod)
 
 plot(y ~ x, pch = 19,
      cex = 1.5,
@@ -360,9 +376,9 @@ plot(propwood ~ year, data = p8,
      ylim = ylims)
 abline(v = 2003.5, col = "red", lwd = 3, lty = 2)
 lm1 <- lm(propwood ~ year, data = p8[1:10,])
-x0 <- 1992.5
+x0 <- 1992.5 # starting year
 y0 <- makemod(lm1, x0)
-x1 <- 2003.5
+x1 <- 2003.5 #
 y1 <- makemod(lm1, x1)
 segments(x0, y0, x1, y1, lty = 1, lwd = 3, col = "black")
 summary(lm1)
