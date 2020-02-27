@@ -225,6 +225,17 @@ summary_poolyearstratum %>% filter(pool == "P04", stratum == "BWC-S") %>%
   geom_point()
 ```
 
+### Save summaries
+```{r}
+save(summary_poolyearstratum, file = "../data/outputs/summary_poolyearstratum.Rda")
+save(summary_all, file = "../data/outputs/summary_all.Rda")
+save(summary_pool, file = "../data/outputs/summary_pool.Rda")
+save(summary_yearpool, file = "../data/outputs/summary_yearpool.Rda")
+save(summary_stratum, file = "../data/outputs/summary_stratum.Rda")
+save(summary_stratumpool, file = "../data/outputs/summary_stratumpool.Rda")
+```
+
+
 # Time series
 ## Set plotting parameters
 ```{r}
