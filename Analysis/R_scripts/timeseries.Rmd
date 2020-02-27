@@ -1,0 +1,391 @@
+---
+title: "timeseries"
+author: "Kaija Gahm"
+date: "2/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Setup
+## Libraries
+```{r}
+source("libraries.R")
+```
+
+## Data
+```{r}
+load("../data/outputs/summary_all.Rda")
+load("../data/outputs/summary_pool.Rda")
+load("../data/outputs/summary_poolyearstratum.Rda")
+load("../data/outputs/summary_stratum.Rda")
+load("../data/outputs/summary_stratumpool.Rda")
+load("../data/outputs/summary_yearpool.Rda")
+```
+
+# Time series
+## Set plotting parameters
+```{r}
+ylims <- c(0,1)
+```
+
+## Function for [making models]/predicting
+```{r}
+makemod <- function(model, x){
+  y0 <- (x * model$coefficients[[2]]) + model$coefficients[[1]]
+  return(y0)
+}
+```
+
+## Overall
+### Examine by pool
+```{r}
+summary_yearpool %>% ggplot(aes(x = as.numeric(year), y = propwood))+
+  geom_point()+
+  stat_smooth(method = "loess", col = "red", se = F)+
+  facet_wrap(~pool)+
+  xlab("Year")+
+  ylab("Proportion with LW")
+```
+
+### Tests on each pool
+```{r}
+head(summary_yearpool)
+summary_yearpool <- summary_yearpool %>% mutate(year = as.numeric(year))
+
+stats <- summary_yearpool %>% group_by(pool) %>% summarize(changepoint = pettitt.test(propwood)$estimate,
+                                                  u_stat = pettitt.test(propwood)$statistic,
+                                                  pt_pval = round(pettitt.test(propwood)$p.value, 3),
+                                                  changeyear = year[changepoint],
+                                                  mk_z = round(mk.test(propwood)$statistic, 3),
+                                                  mk_pval = round(mk.test(propwood)$p.value, 3),
+                                                  begyear = min(year),
+                                                  endyear = max(year),
+                                                  mn1 = round(mean(propwood[1:changepoint]), 3),
+                                                  mn2 = round(mean(propwood[(changepoint + 1):n()]), 3))
+stats
+
+# this table shows results of the pettitt test and the mk test for the _overall_ dataset. It does not yet include trend analyses for subsections if a breakpoint was found.
+```
+### Prepare data
+```{r}
+# Join stats to summary
+summary_yearpool <- summary_yearpool %>% left_join(stats, by = "pool")
+
+# Make into a nested data frame
+summary_yearpool %>% group_by(pool) %>% nest()
+```
+
+
+### Make plots
+```{r}
+# basic plot for each one
+basicplot <- function(data){ # basic plot
+  ggplot(aes(x = year, y = propwood), data = data)+
+    geom_point()
+}
+
+pools <- summary_yearpool$pool %>% unique() # get a vector of unique pools
+
+for(i in 1:length(pools)){ # loop through the pools to make plots
+  subset <- summary_yearpool %>% filter(pool == pools[i])
+  pt <- basicplot(subset)
+  print(pt)
+}
+
+# breakpoints if significant
+
+```
+
+
+### Pool 4
+#### All years
+```{r}
+p4 <- summary_yearpool %>% filter(pool == "P04") %>% dplyr::select(year, propwood) %>% mutate(year = as.numeric(year))
+p4 %>% ggplot(aes(x = year, y = propwood))+
+  geom_point()
+
+lin.mod <- lm(propwood ~ year, data = p4)
+seg.mod <- segmented(lin.mod, data = p4, psi = 1999) # singular
+p4$seg_fit <- broken.line(seg.mod)$fit # add fitted values to the data frame.
+
+baseplot_p4 <- p4 %>% ggplot(aes(x = year, y = propwood))+
+  geom_point()+
+  ylim(0, 1)+
+  xlab("Year")+
+  ylab("Proportion with LW")+
+  ggtitle("Pool 4")+
+  theme_minimal()
+
+baseplot_p4 + geom_line(aes(y = seg_fit), lwd = 0.3)
+
+
+plot(propwood ~ year, data = p4, # compare this to the above for how they connect the lines... weird that it's different.
+     pch = 19, 
+     cex = 1.5, 
+     xlab = "Year",
+     ylab = "Proportion with LW",
+     main = "Pool 4")
+plot(seg.mod, add = T)
+```
+
+#### After 1999
+```{r}
+p4b <- p4 %>% filter(year >= 1999)
+
+p4b %>% ggplot(aes(x = year, y = propwood))+
+  geom_point()+
+  stat_smooth(method = "lm", col = "red", lwd = 0.3, se = F)+
+  theme_minimal()
+```
+
+#### Tests
+```{r}
+pt <- pettitt.test(p4$propwood)  
+str(pt)
+(changepoint <- pt$estimate) # First 8 points separate
+changeyear <- mean(c(p4$year[changepoint], p4$year[changepoint+1])) # get year for change in means
+
+mk.test(p4$propwood) # Monotonic trend? [INTERPRETATION?]
+```
+
+#### Mean before change
+```{r}
+baseplot_p4 + geom_vline(aes(xintercept = changeyear), 
+                         col = "red",
+                         lty = 2)
+
+# I don't really know what's going on with these models... can we leave them out?
+lm1 <- lm(propwood ~ year, data = p4[1:changepoint,])
+begyear <- 1992.5 # where does this come from? Prior knowledge?
+y0 <- makemod(lm1, begyear)
+y1 <- makemod(lm1, changeyear)
+summary(lm1)
+
+lm2 <- lm(propwood ~ year, data = p4[(changepoint + 1):nrow(p4),])
+y0 <- makemod(lm2, changeyear)
+endyear <- max(p4$year) + 0.5
+y1 <- makemod(lm2, endyear)
+
+mn1 <- p4[1:changepoint,] %>% pull(propwood) %>% mean()
+mn2 <- p4[(changepoint + 1):nrow(p4),] %>% pull(propwood) %>% mean()
+
+baseplot_p4 + geom_vline(aes(xintercept = changeyear), 
+                         col = "red",
+                         lty = 2) + 
+  geom_segment(aes(x = begyear, y = mn1, xend = changeyear, yend = mn1),
+               lty = 2,
+               col = "darkgrey")+
+  geom_segment(aes(x = changeyear, y = mn2, xend = endyear, yend = mn2),
+               lty = 2,
+               col = "darkgrey")+
+  geom_text(aes(x = 1995, y = mn1 - 0.05, label = paste0("mean = ", round(mn1, 2))), size = 4,
+            col = "darkgrey",
+            check_overlap = T)+
+  geom_text(aes(x = 2006, y = mn2 - 0.05, label = paste0("mean = ", round(mn2, 2))), size = 4,
+            col = "darkgrey",
+            check_overlap = T)
+```
+
+### Pool 8
+#### All years
+```{r}
+p8 <- summary_yearpool %>% filter(pool == "P08") %>% dplyr::select(year, propwood) %>% mutate(year = as.numeric(year))
+
+lin.mod <- lm(propwood ~ year, data = p8)
+seg.mod <- segmented(lin.mod, data = p8, seg.Z = ~ year, psi = 2003)
+
+pt <- pettitt.test(p8$propwood) # first 6 points is separate
+(changepoint <- pt$estimate) # First 8 points separate
+changeyear <- mean(c(p8$year[changepoint], p8$year[changepoint + 1])) # get year for change in means
+mk.test(p8$propwood) # monotonic trend? yes, highly significant trend
+
+p8 %>% ggplot(aes(x = year, y = propwood))+
+  geom_point()+
+  xlab("Year")+
+  ylab("Proportion with LW")+
+  ggtitle("Pool 8")
+```
+
+
+```{r}
+lm1 <- lm(propwood ~ year, data = p8[1:changepoint,])
+lm2 <- lm(propwood ~ year, data = p8[(changepoint + 1):nrow(p8),])
+slope1 <- lm1$coefficients[2] # extract slope
+slope2 <- lm2$coefficients[2] # extract slope
+
+p8 %>% ggplot(aes(x = year, y = propwood))+
+  geom_point()+
+  geom_vline(aes(xintercept = changeyear), 
+                         col = "red",
+                         lty = 2)+
+  geom_smooth(data = p8[1:changepoint,], 
+              method = "lm", 
+              se = F, 
+              col = "darkgrey",
+              lwd = 0.5)+
+  geom_smooth(data = p8[(changepoint + 1):nrow(p8),],
+              method = "lm",
+              se = F,
+              col = "darkgrey",
+              lwd = 0.5)+
+  geom_text(aes(x = 1997, y = 0.7, label = paste0("slope = ", round(slope1, 3))), size = 4,
+            col = "darkgrey",
+            check_overlap = T)+
+  geom_text(aes(x = 2010, y = 0.45, label = paste0("slope = ", round(slope2, 3))), size = 4,
+            col = "darkgrey",
+            check_overlap = T)
+```
+
+### Pool 13
+#### All years
+```{r}
+p13 <- summary_yearpool %>% filter(pool == "P13") %>% dplyr::select(year, propwood) %>% mutate(year = as.numeric(year))
+
+lin.mod <- lm(propwood ~ year, data = p13)
+seg.mod <- segmented(lin.mod, data = p13, psi = 2005) # what is the psi??
+
+pt <- pettitt.test(p13$propwood) # first 16 points is separate
+(changepoint <- pt$estimate) # First 16 points separate
+changeyear <- mean(c(p13$year[changepoint], p13$year[changepoint + 1])) # get year for change in means
+mk.test(p13$propwood) # monotonic trend? no, not really.
+
+p13 %>% ggplot(aes(x = year, y = propwood))+
+  geom_point()+
+  xlab("Year")+
+  ylab("Proportion with LW")+
+  ggtitle("Pool 13")
+```
+```{r}
+mn1 <- p13 %>% filter(year < changeyear) %>% pull(propwood) %>% mean()
+mn2 <- p13 %>% filter(year > changeyear) %>% pull(propwood) %>% mean()
+begyear <- min(p13$year) - 0.5
+endyear <- max(p13$year) + 0.5
+
+p13 %>% ggplot(aes(x = year, y = propwood))+
+  geom_point()+
+  xlab("Year")+
+  ylab("Proportion with LW")+
+  ggtitle("Pool 13") + 
+  geom_vline(aes(xintercept = changeyear), 
+                         col = "red",
+                         lty = 2) + 
+  geom_segment(aes(x = begyear, y = mn1, xend = changeyear, yend = mn1),
+               lty = 2,
+               col = "darkgrey") +
+  geom_segment(aes(x = changeyear, y = mn2, xend = endyear, yend = mn2),
+               lty = 2,
+               col = "darkgrey") +
+  geom_text(aes(x = 1995, y = mn1 - 0.05, label = paste0("mean = ", round(mn1, 2))), size = 4,
+            col = "darkgrey",
+            check_overlap = T) +
+  geom_text(aes(x = 2013, y = mn2 - 0.05, label = paste0("mean = ", round(mn2, 2))), size = 4,
+            col = "darkgrey",
+            check_overlap = T)
+```
+
+### Pool 26
+#### All years
+```{r}
+p26 <- summary_yearpool %>% filter(pool == "P26") %>% dplyr::select(year, propwood) %>% mutate(year = as.numeric(year))
+
+lin.mod <- lm(propwood ~ year, data = p26)
+seg.mod <- segmented(lin.mod, data = p26, psi = 2000) # what is psi
+
+pt <- pettitt.test(p26$propwood) # first 6 points is separate
+(changepoint <- pt$estimate) # First 8 points separate
+changeyear <- mean(c(p26$year[changepoint], p26$year[changepoint + 1])) # get year for change in means
+mk.test(p26$propwood) # no trend
+
+p26 %>% ggplot(aes(x = year, y = propwood))+
+  geom_point()+
+  xlab("Year")+
+  ylab("Proportion with LW")+
+  ggtitle("Pool 26")
+
+
+
+plot(y ~ x, pch = 19,
+     cex = 1.5,
+     xlab = "Year",
+     ylab = "Proportion with LW",
+     main = "Pool 26")
+plot(seg.mod, add = T)
+summary(seg.mod)
+summary(lin.mod)
+slope(seg.mod)
+
+pettitt.test(p26$propwood) # break in mean? NO
+mk.test(p26$propwood) # monotonic trend? NO
+(mean1 <- mean(p26$propwood)) #No trends/breaks whatsoever
+     
+plot(propwood ~ year, data = p26,
+     pch = 19,
+     cex = 1.75,
+     xlab = "Year",
+     ylab = "Proportion with LW",
+     main = "Pool 26",
+     cex.lab = 1.5,
+     cex.axis = 1.25,
+     ylim = ylims)
+abline(h = mean(p26$propwood), col = "darkgrey", lwd = 2, lty = 2)
+points(propwood ~ year, data = p26, pch = 19, cex = 1.75)
+text(2015, 0.9, labels = "mean = 0.594", cex = 1.5)   
+```
+
+
+
+
+
+
+
+
+## Aquatic areas by pool
+### P4
+#### Exploratory
+```{r}
+p4 <- summary_poolyearstratum %>% filter(pool == "P04") %>% dplyr::select(year, stratum, propwood)
+
+  # exploratory first...
+  p4 %>% ggplot(aes(x = as.numeric(year), y = propwood))+
+    geom_point()+
+    stat_smooth(method = "loess", col = "red")+
+    theme_minimal()+
+    theme(text = element_text(size = 20))+
+    facet_wrap(~stratum)
+  
+  # examine habitats separately
+  p4.bwc <- p4 %>% filter(stratum == "BWC-S")
+  pettitt.test(p4.bwc$propwood) # first 6 points is separate [edit 2/15/20: i don't know how to interpret this test, just reproducing the comments as they were before.]
+  mk.test(p4.bwc$propwood) # monotonic trend?
+  
+  p4.mcb <- p4 %>% filter(stratum == "MCB-U")
+  pettitt.test(p4.mcb$propwood) # first 6 points is separate 
+  mk.test(p4.mcb$propwood) # monotonic trend?
+
+  p4.scb <- p4 %>% filter(stratum == "SCB")
+  pettitt.test(p4.scb$propwood) # first 6 points is separate 
+  mk.test(p4.scb$propwood) # monotonic trend?
+```
+
+#### Plots for export
+```{r}
+#Plot for export
+ah.pch <- c(NA, 3, NA, NA, NA, 19, NA, 1)[as.numeric(p4$stratum)]
+plot(propwood ~ year, 
+     data = p4, 
+     cex = 1.75,
+     xlab = "Year",
+     ylab = "Proportion with LW",
+     main = "Pool 4",
+     cex.lab = 1.5,
+     cex.axis = 1.25,
+     ylim = ylims,
+     pch = ah.pch)
+abline(v = 1998.5, col = "black", lty = 1, lwd = 1) #MCB - or lwd = 3?
+abline(v = 1998.5, col = "grey", lty = 2, lwd = 1) #BWC
+abline(v = 2000.5, col = "grey", lty = 1, lwd = 1) # SCB
+points(propwood ~ year, data = p4, cex = 1.75, pch = ah.pch) # Kaija 2/15/20: why is this necessary if we already specified the points and point types in the original plot call?
+```
