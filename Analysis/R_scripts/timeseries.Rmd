@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Setup
 ## Libraries
-```{r}
+```{r echo = FALSE}
 source("libraries.R")
 ```
 
@@ -58,7 +58,7 @@ summary_yearpool <- summary_yearpool %>% mutate(year = as.numeric(year))
 stats <- summary_yearpool %>% group_by(pool) %>% summarize(changepoint = pettitt.test(propwood)$estimate,
                                                   u_stat = pettitt.test(propwood)$statistic,
                                                   pt_pval = round(pettitt.test(propwood)$p.value, 3),
-                                                  changeyear = year[changepoint],
+                                                  changeyear = year[changepoint] + 0.5,
                                                   mk_z = round(mk.test(propwood)$statistic, 3),
                                                   mk_pval = round(mk.test(propwood)$p.value, 3),
                                                   begyear = min(year),
@@ -72,31 +72,79 @@ stats
 ### Prepare data
 ```{r}
 # Join stats to summary
-summary_yearpool <- summary_yearpool %>% left_join(stats, by = "pool")
-
-# Make into a nested data frame
-summary_yearpool %>% group_by(pool) %>% nest()
+#summary_yearpool <- summary_yearpool %>% left_join(stats, by = "pool")
 ```
 
 
 ### Make plots
 ```{r}
-# basic plot for each one
-basicplot <- function(data){ # basic plot
+## FUNCTION TO CONSTRUCT GGPLOT for a given dataset
+plotfun <- function(data){ 
+  
+  # DEFINE THE CURRENT POOL
+  if(length(unique(data$pool)) == 1){
+    current_pool <- data$pool[1] %>% droplevels() %>% as.character()
+  }else{
+    stop('This data set contains data from more than one pool. Make sure to subset first!')
+  }
+  
+  # GET STATS FOR THIS POOL
+  current_stats <- stats %>% filter(pool == current_pool) %>% droplevels() %>% as.list() #subset the stats data frame
+  
+  # IF BREAKPOINT, TEST FOR LINEAR TRENDS BEFORE/AFTER BREAKPOINT
+  if(current_stats$pt_pval < 0.05){ # if there is a significant breakpoint...
+    mk1 <- mk.test(data$propwood[1:current_stats$changepoint]) # test first part
+    mk2 <- mk.test(data$propwood[(current_stats$changepoint + 1):nrow(data)]) # test second part
+    
+    mkp1 <- mk1$p.value # get first p value
+    mkp2 <- mk2$p.value # get second p value
+  }else{
+    mkp1 <- NA # no p-value if we didn't fit the model
+    mkp2 <- NA # no p-value if we didn't fit the model
+  }
+  
+  # MAKE PLOT, WITH CONDITIONAL LAYERS
   ggplot(aes(x = year, y = propwood), data = data)+
-    geom_point()
+    geom_point()+
+    ggtitle(pool)+
+    {if(current_stats$pt_pval < 0.05)geom_vline(xintercept = current_stats$changeyear,
+                                                col = "red",
+                                                lty = 2)}+ # add red line for breakpoint
+    {if(current_stats$pt_pval < 0.05)geom_segment(aes(x = current_stats$begyear,
+                                                      y = current_stats$mn1,
+                                                      xend = current_stats$changeyear - 0.5,
+                                                      yend = current_stats$mn1),
+                                                  col = "darkgrey",
+                                                  lty = 2)} + # add first mean
+    {if(current_stats$pt_pval < 0.05)geom_segment(aes(x = current_stats$changeyear + 0.5,
+                                                      y = current_stats$mn2,
+                                                      xend = current_stats$endyear,
+                                                      yend = current_stats$mn2),
+                                                  col = "darkgrey",
+                                                  lty = 2)}+ # add second mean
+    {if(current_stats$mk_pval < 0.05)geom_smooth(method = "lm", 
+                                                 se = FALSE, 
+                                                 col = "black",
+                                                 lwd = 0.5)}+
+    {if(current_stats$pt_pval >= 0.05 & 
+        current_stats$mk_pval >= 0.05)geom_segment(aes(x = current_stats$begyear,
+                                                       y = mean(propwood),
+                                                       xend = current_stats$endyear,
+                                                       yend = mean(propwood)),
+                                                   col = "darkgrey",
+                                                   lty = 2)}+ # add a plain mean if neither test is sig.
+    {if()}
 }
 
 pools <- summary_yearpool$pool %>% unique() # get a vector of unique pools
 
 for(i in 1:length(pools)){ # loop through the pools to make plots
   subset <- summary_yearpool %>% filter(pool == pools[i])
-  pt <- basicplot(subset)
+  pt <- plotfun(subset)
   print(pt)
 }
 
-# breakpoints if significant
-
+exists(mkp1)
 ```
 
 
