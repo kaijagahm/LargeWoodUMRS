@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Load functions and libraries
-```{r echo = F}
+```{r results = "hide"}
 source("ownfunctions.R")
 source("libraries.R")
 ```
@@ -22,13 +22,13 @@ source("libraries.R")
 load("../data/outputs/fish_data_EF.Rda") 
   # Fish sampling data
 fish_data_EF <- fish_data_EF %>% mutate(fishdata_rownum = 1:nrow(fish_data_EF)) #number the rows
-names(fish_data_EF)
 
 sites_p4p8p13 <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_p4p8p13.txt") 
   # reprojected data
 
 rivmi <- read.table("../data/inputs/p4p8p13_rivmile.txt", sep = ",", header = T) 
   # river mile data
+
 sites_aa_5m <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_aquaareas5m.txt") 
   # merged aquatic areas data for points buffered by 5 meters.
 
@@ -46,18 +46,20 @@ lc_2010 <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/lc_2010.txt")
 
 ## Initialize the data frame
 ```{r}
-sites_ur <- rivmi %>% select(TARGET_FID, Field1, stratum, lcode, sdate, utm_e, utm_n, snag, RIVER_MILE)
+sites_ur <- rivmi %>% dplyr::select(TARGET_FID, Field1, stratum, lcode, sdate, utm_e, utm_n, snag, RIVER_MILE)
 ```
 
 ## Join fish data
 ```{r}
 sites_ur <- sites_ur %>% rename(fishdata_rownum = Field1) # The Field1 column in this dataset corresponds to the row number in fish_data_EF.
 
-fish_data_EF_tojoin <- fish_data_EF %>% select(sitetype, gear, wingdyke, riprap, trib, barcode, summary, fishdata_rownum)
+fish_data_EF_tojoin <- fish_data_EF %>% dplyr::select(sitetype, gear, wingdyke, riprap, trib, barcode, summary, fishdata_rownum, zone15e, zone15n, utmzone)
 
 sites_ur <- left_join(sites_ur, fish_data_EF_tojoin, by = "fishdata_rownum")
 
 # Note that after this join, we now have the "barcode" column in our data. This will allow us to join other data by barcode.
+
+sites_ur %$% table(utmzone)
 ```
 
 ## Join aquatic areas data
@@ -69,8 +71,8 @@ sites_ur <- sites_ur %>% mutate(joiner = paste(stratum, lcode, sdate, utm_e, utm
 # These appear to be exactly the same. Check:
 sum(sites_aa_5m$joiner != sites_ur$joiner) #yep, they are the same! That makes it easy:
 
-sites_ur <- sites_ur %>% select(-c(joiner, TARGET_FID)) # remove the joiner column and also TARGET_FID; we don't need that anymore.
-sites_aa_5m <- sites_aa_5m %>% select(-c(joiner, TARGET_FID)) 
+sites_ur <- sites_ur %>% dplyr::select(-c(joiner, TARGET_FID)) # remove the joiner column and also TARGET_FID; we don't need that anymore.
+sites_aa_5m <- sites_aa_5m %>% dplyr::select(-c(joiner, TARGET_FID)) 
 
 # Join the aa information to sites_ur.
 sites_ur <- left_join(sites_ur, sites_aa_5m, by = c("stratum", "lcode", "sdate", "utm_e", "utm_n", "snag"))
@@ -125,13 +127,11 @@ sites_ur %>% ggplot(aes(x = utm_e, y = utm_n))+
 ```
 
 
-
-
 ## Join environmental info
 ### Distance to terrestrial areas
 ```{r}
 # terrestrial data to join
-terr_tojoin <- sites_terrestrial %>% select(NEAR_FID, NEAR_DIST, Field1)
+terr_tojoin <- sites_terrestrial %>% dplyr::select(NEAR_FID, NEAR_DIST, Field1)
 sites_ur <- left_join(sites_ur, terr_tojoin, by = "Field1") %>% 
   rename(NEAR_TERR_FID = NEAR_FID, # ID of nearest terrestrial region
          NEAR_TERR_DIST = NEAR_DIST) # distance to nearest terrestrial region
@@ -144,7 +144,7 @@ sites_ur <- left_join(sites_ur, terr_tojoin, by = "Field1") %>%
 ### Info about nearest terrestrial region
 ```{r}
 # We're going to pull terrestrial areas information columns from `lc_2010`, not from `terrestrial`, because the FID's don't match up in `terrestrial`.
-terrinfo_tojoin <- lc_2010 %>% select(FID, CLASS_7_C, CLASS_7_N)
+terrinfo_tojoin <- lc_2010 %>% dplyr::select(FID, CLASS_7_C, CLASS_7_N)
 sites_ur <- left_join(sites_ur, terrinfo_tojoin, by = c("NEAR_TERR_FID" = "FID")) %>%
   rename(NEAR_TERR_CLASS_7 = CLASS_7_C,
          NEAR_TERR_CLASS_7_N = CLASS_7_N) # join the columns and rename appropriately
@@ -152,7 +152,7 @@ sites_ur <- left_join(sites_ur, terrinfo_tojoin, by = c("NEAR_TERR_FID" = "FID")
 
 ### Distance to forested areas
 ```{r}
-forest_tojoin <- sites_forest %>% select(Field1, NEAR_FID, NEAR_DIST)
+forest_tojoin <- sites_forest %>% dplyr::select(Field1, NEAR_FID, NEAR_DIST)
 sites_ur <- left_join(sites_ur, forest_tojoin, by = "Field1") %>% 
   rename(NEAR_FOREST_FID = NEAR_FID, # which forested area is the closest
          NEAR_FOREST_DIST = NEAR_DIST) # distance to nearest forested area
@@ -171,7 +171,7 @@ toexclude <- c("OBJECTID", "aa_num", "AQUA_CODE", "AQUA_DESC", "Area", "Acres", 
 
 toexclude <- toexclude[toexclude %in% names(sites_ur)] # only the ones that are actually in the df
 
-sites_ur <- sites_ur %>% select(-toexclude) # drop columns
+sites_ur <- sites_ur %>% dplyr::select(-toexclude) # drop columns
 names(sites_ur)
 ```
 
@@ -190,9 +190,9 @@ sites_ur <- sites_ur %>% rename(perimeter = Perimeter,
 
 ### Replace -999 etc. with NA
 ```{r}
-factors <- sites_ur %>% select_if(., is.factor) %>% names()
+factors <- sites_ur %>% dplyr::select_if(., is.factor) %>% names()
 
-colstomodify <- sites_ur %>% select(-factors) %>% select(-barcode) %>% names()
+colstomodify <- sites_ur %>% dplyr::select(-factors) %>% dplyr::select(-barcode) %>% names()
                
 for(i in colstomodify){
   sites_ur[,i][sites_ur[,i] < -5000] <- NA
@@ -264,7 +264,7 @@ sites_lr <- sites_p26ilror
 ```{r}
 sites_lr <- sites_lr %>% rename(fishdata_rownum = RowID_) # The RowID_ column in this dataset corresponds to the row number in ltrm_fish_data, I think. I'm inferring this from parallels to the upper river data.
 
-ltrm_fish_data_tojoin <- ltrm_fish_data %>% select(sitetype, gear, wingdyke, riprap, trib, barcode, summary, fishdata_rownum)
+ltrm_fish_data_tojoin <- ltrm_fish_data %>% dplyr::select(sitetype, gear, wingdyke, riprap, trib, barcode, summary, fishdata_rownum, zone15e, zone15n, utmzone)
 
 sites_lr <- left_join(sites_lr, ltrm_fish_data_tojoin, by = "fishdata_rownum")
 # Note that after this join, we now have the "barcode" column in our data. This will allow us to join other data by barcode.
@@ -280,8 +280,8 @@ sites_lr <- sites_lr %>% mutate(joiner = paste(stratum, lcode, sdate, utm_e, utm
 sum(sites_aa_5m$joiner != sites_lr$joiner) #yep, they are the same! That makes it easy:
 nrow(sites_aa_5m) == nrow(sites_lr) #TRUE
 
-sites_lr <- sites_lr %>% select(-c(joiner, FID)) # remove the joiner column and also FID; we don't need that anymore.
-sites_aa_5m <- sites_aa_5m %>% select(-c(joiner, FID))
+sites_lr <- sites_lr %>% dplyr::select(-c(joiner, FID)) # remove the joiner column and also FID; we don't need that anymore.
+sites_aa_5m <- sites_aa_5m %>% dplyr::select(-c(joiner, FID))
 
 # Join the aa information to sites_lr.
 sites_lr <- left_join(sites_lr, sites_aa_5m, by = c("stratum", "lcode", "sdate", "utm_e", "utm_n", "snag"))
@@ -314,13 +314,19 @@ sum(is.na(sites_lr$pool)) # we still have a bunch of NA's for pool
 sites_lr %>% ggplot(aes(x = utm_e, y = utm_n))+
   geom_point(aes(col = pool)) # There are some very weird things going on with the UTM coordinates here.
 
+# Investigate the weird utm coordinates
+sites_lr %$% table(utmzone) # indeed, these are listed as being in zone 16. 
+
+# But if we plot the zone 15 coords, it seems to be fine? (except for a few points)
+sites_lr %>% ggplot(aes(x = zone15e, y = zone15n))+
+  geom_point(aes(col = pool))
 ```
 
 ## Join environmental info
 ### Distance to terrestrial areas
 ```{r}
 # terrestrial data to join
-terr_tojoin <- sites_terrestrial %>% select(NEAR_FID, NEAR_DIST, RowID_)
+terr_tojoin <- sites_terrestrial %>% dplyr::select(NEAR_FID, NEAR_DIST, RowID_)
 sites_lr <- left_join(sites_lr, terr_tojoin, by = "RowID_") %>% 
   rename(NEAR_TERR_FID = NEAR_FID, # ID of nearest terrestrial region
          NEAR_TERR_DIST = NEAR_DIST) # distance to nearest terrestrial region
@@ -333,7 +339,7 @@ sites_lr <- left_join(sites_lr, terr_tojoin, by = "RowID_") %>%
 ### Info about nearest terrestrial region
 ```{r}
 # We're going to pull terrestrial areas information columns from `lc_2010`, not from `terrestrial`, because the FID's don't match up in `terrestrial`.
-terrinfo_tojoin <- lc_2010 %>% select(FID, CLASS_7_C, CLASS_7_N)
+terrinfo_tojoin <- lc_2010 %>% dplyr::select(FID, CLASS_7_C, CLASS_7_N)
 sites_lr <- left_join(sites_lr, terrinfo_tojoin, by = c("NEAR_TERR_FID" = "FID")) %>%
   rename(NEAR_TERR_CLASS_7 = CLASS_7_C,
          NEAR_TERR_CLASS_7_N = CLASS_7_N) # join the columns and rename appropriately
@@ -341,7 +347,7 @@ sites_lr <- left_join(sites_lr, terrinfo_tojoin, by = c("NEAR_TERR_FID" = "FID")
 
 ### Distance to forested areas
 ```{r}
-forest_tojoin <- sites_forest %>% select(RowID_, NEAR_FID, NEAR_DIST)
+forest_tojoin <- sites_forest %>% dplyr::select(RowID_, NEAR_FID, NEAR_DIST)
 sites_lr <- left_join(sites_lr, forest_tojoin, by = "RowID_") %>% 
   rename(NEAR_FOREST_FID = NEAR_FID, # which forested area is the closest
          NEAR_FOREST_DIST = NEAR_DIST) # distance to nearest forested area
@@ -360,7 +366,7 @@ toexclude <- c("OBJECTID", "aa_num", "AQUA_CODE", "AQUA_DESC", "Area", "Acres", 
 
 toexclude <- toexclude[toexclude %in% names(sites_lr)] # only the ones that are actually in the df
 
-sites_lr <- sites_lr %>% select(-toexclude) # drop columns
+sites_lr <- sites_lr %>% dplyr::select(-toexclude) # drop columns
 names(sites_lr)
 ```
 
@@ -378,9 +384,9 @@ sites_lr <- sites_lr %>% rename(perimeter = Perimeter,
 
 ### Replace -999 etc. with NA
 ```{r}
-factors <- sites_lr %>% select_if(., is.factor) %>% names()
+factors <- sites_lr %>% dplyr::select_if(., is.factor) %>% names()
 
-colstomodify <- sites_lr %>% select(-factors) %>% select(-barcode) %>% names()
+colstomodify <- sites_lr %>% dplyr::select(-factors) %>% names()
                
 for(i in colstomodify){
   sites_lr[,i][sites_lr[,i] < -5000] <- NA
@@ -429,10 +435,11 @@ names(sites_lr)
 
 ### Fix inconsistencies
 ```{r}
-sites_lr <- sites_lr %>% select(-c("OBJECTID_1", "RowID_"))
+sites_lr <- sites_lr %>% dplyr::select(-c("OBJECTID_1", "RowID_"))
 sites_lr <- sites_lr %>% mutate(river_mile = NA)
-names(sites_lr) 
-names(sites_ur)
+names(sites_lr) %in% names(sites_ur)
+names(sites_ur) %in% names(sites_lr)
+names(sites_ur) == names(sites_lr)
 # Now they have the same names but in a different order
 
 sites_lr <- sites_lr[,names(sites_ur)] # align names
@@ -452,18 +459,5 @@ sites_upperlower <- rbind(sites_lr, sites_ur)
 ## Save data
 ```{r}
 #save(sites_upperlower, file = "../data/outputs/sites_upperlower.Rda")
-```
-
-
-```{r}
-load("../data/outputs/sites_upperlower.Rda")
-
-library(tidyverse)
-sites_upperlower %>% ggplot(aes(x = utm_e, y = utm_n, col = pool))+
-  geom_point()
-
-sites_upperlower %>% filter(pool == "OR2") %>% ggplot(aes(x = utm_e)) + geom_histogram()
-
-sites_upperlower %>% filter(pool == "OR2", utm_e < 400000)
 ```
 
