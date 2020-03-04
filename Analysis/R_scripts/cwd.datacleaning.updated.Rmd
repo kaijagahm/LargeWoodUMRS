@@ -22,6 +22,7 @@ source("libraries.R")
 load("../data/outputs/fish_data_EF.Rda") 
   # Fish sampling data
 fish_data_EF <- fish_data_EF %>% mutate(fishdata_rownum = 1:nrow(fish_data_EF)) #number the rows
+names(fish_data_EF)
 
 sites_p4p8p13 <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_p4p8p13.txt") 
   # reprojected data
@@ -452,3 +453,17 @@ sites_upperlower <- rbind(sites_lr, sites_ur)
 ```{r}
 #save(sites_upperlower, file = "../data/outputs/sites_upperlower.Rda")
 ```
+
+
+```{r}
+load("../data/outputs/sites_upperlower.Rda")
+
+library(tidyverse)
+sites_upperlower %>% ggplot(aes(x = utm_e, y = utm_n, col = pool))+
+  geom_point()
+
+sites_upperlower %>% filter(pool == "OR2") %>% ggplot(aes(x = utm_e)) + geom_histogram()
+
+sites_upperlower %>% filter(pool == "OR2", utm_e < 400000)
+```
+
