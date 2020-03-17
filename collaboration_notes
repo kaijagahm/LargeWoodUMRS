@@ -1,0 +1,9 @@
+Collaboration Notes
+
+17 March 2020: Questions
+ - Clarify what ALT is, whether OR1 and OR2 should be put together, etc.
+ - Make it clear that I haven't yet added labels--is that something we should do when the graphs are more ready for publication?
+    * maybe look into whether ggplot has an easy way to add labels to components, repelling not just from other text but also from lines etc.
+ - UTM zones: 
+  - data cleaning, line 62, shows that all upper river sites except 1 are in zone 15; the others are in zone 16. 
+  - data cleaning, line 318, shows that many lower river sites are in zone 16, not 16. There's a separate column in the data for zone15 utm coords. If we plot those, the majority of the sites seem to be fine, except for a few outliers. Should we just go with those coords and get rid of the other ones?
