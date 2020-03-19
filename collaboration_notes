@@ -1,17 +1,13 @@
 Collaboration Notes
 
-17 March 2020: Questions
-
-
+19 March 2020: Meeting
  - UTM zones: 
   - data cleaning, line 62, shows that all upper river sites except 1 are in zone 15; the others are in zone 16. 
   - data cleaning, line 318, shows that many lower river sites are in zone 16, not 16. There's a separate column in the data for zone15 utm coords. If we plot those, the majority of the sites seem to be fine, except for a few outliers. Should we just go with those coords and get rid of the other ones?
     Use the zone15e and zone15n coordinates. Exclude the ones that are being weird. 
   
  - How should we think about collaboratively writing the manuscript? If we do it in R, we could update graphs/tables in real time, without having to copy/paste. Downside is that we'd have a bit of a learning curve to get that all up and running for everyone.
- 
- 
- 
+    - Have decided to use Google Docs. KathiJo will set up.
  
  - Make it clear that I haven't yet added labels--is that something we should do when the graphs are more ready for publication?
     * maybe look into whether ggplot has an easy way to add labels to components, repelling not just from other text but also from lines etc. 
@@ -23,3 +19,15 @@ Collaboration Notes
  - The habitat types listed in Table 1 don't correspond exactly to the ones in the dataset. TWZ is missing from Table 1, and all of the strata in the dataset have appended suffixes that don't show up in the table. Should I aggregate e.g. IMP-O and IMP-S?
    - Once we decide on this, we need to amend the tables accordingly.
    - Can mostly combine the categories. Cross-check number of observations against the table, accounting for how many observations we excluded for being pseudo-shoreline. 
+   
+~~~~~~~~~~~~
+Next steps: revising the results, adding the stats and summary. 
+Environmental variables: 
+  We should maybe just stick with the random forests. 
+  Tiered approach: Global model, and then pools separately, and then habitat areas separately (but across pools)
+  Hierarchical structure will help us know whether pools are behaving similarly. Wait for Molly to go through the environmental variables before re-running the models. 
+Maybe look into Zotero extension in google docs?
+
+  
+  
+  
