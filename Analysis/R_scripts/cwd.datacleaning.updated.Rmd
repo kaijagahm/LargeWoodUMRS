@@ -456,8 +456,31 @@ sites_ur <- sites_ur %>% mutate(upperlower = "upper")
 sites_upperlower <- rbind(sites_lr, sites_ur)
 ```
 
+## Remove ALT and OR1
+```{r}
+sites_lr <- sites_lr %>% 
+  filter(!(pool %in% c("ALT", "OR1"))) %>%
+  droplevels()
+
+sites_ur <- sites_ur %>% 
+  filter(!(pool %in% c("ALT", "OR1"))) %>%
+  droplevels()
+
+sites_upperlower <- sites_upperlower %>% 
+  filter(!(pool %in% c("ALT", "OR1"))) %>%
+  droplevels()
+```
+
+
 ## Save data
 ```{r}
-#save(sites_upperlower, file = "../data/outputs/sites_upperlower.Rda")
+save(sites_upperlower, file = "../data/outputs/sites_upperlower.Rda")
+save(sites_ur, file = "../data/outputs/sites_ur.Rda")
+save(sites_lr, file = "../data/outputs/sites_lr.Rda")
+
+# As CSV's
+write.csv(sites_upperlower, "../data/outputs/sites_upperlower.csv", row.names = F)
+write.csv(sites_ur, "../data/outputs/sites_ur.csv", row.names = F)
+write.csv(sites_lr, "../data/outputs/sites_lr.csv", row.names = F)
 ```
 
