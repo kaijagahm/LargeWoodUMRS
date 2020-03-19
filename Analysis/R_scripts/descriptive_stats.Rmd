@@ -23,10 +23,10 @@ load("../data/outputs/sites_lr.Rda")
 ```
 
 # Data Cleaning
-## Remove the river mile column
+## Examine strata
 ```{r}
-head(sites_upperlower)
-sites_upperlower <- sites_upperlower %>% dplyr::select(-river_mile)
+sites_upperlower <- sites_upperlower %>% droplevels()
+sites_upperlower %$% table(stratum)
 ```
 
 ## Exclude strata: BWC-O and MCB-W
@@ -515,8 +515,10 @@ p4 <- summary_poolyearstratum %>% filter(pool == "P04") %>% dplyr::select(year, 
     geom_point()+
     stat_smooth(method = "loess", col = "red")+
     theme_minimal()+
-    theme(text = element_text(size = 20))+
-    facet_wrap(~stratum)
+    theme(text = element_text(size = 15))+
+    facet_wrap(~stratum)+
+    xlab("Year")+
+    ylab("Proportion with LW")
   
   # examine habitats separately
   p4.bwc <- p4 %>% filter(stratum == "BWC-S")
