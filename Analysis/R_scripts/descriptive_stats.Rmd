@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Source libraries and functions
-```{r}
+```{r echo = F}
 source("../R_scripts/libraries.R")
 source("../R_scripts/ownfunctions.R")
 ```
@@ -467,7 +467,8 @@ p26 %>% ggplot(aes(x = year, y = propwood))+
   ggtitle("Pool 26")
 
 
-
+x <- p26$year
+y <- p26$propwood
 plot(y ~ x, pch = 19,
      cex = 1.5,
      xlab = "Year",
