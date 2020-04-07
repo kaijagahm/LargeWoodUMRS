@@ -302,6 +302,7 @@ for(i in 1:nrow(sites_lr)){
 } # there's probably a better way to do this, but whatever.
 ```
 
+## Fix pools
 ```{r}
 # Fix missing pools using addpools function defined for ur above.
 sites_lr <- addpools(sites_lr)
@@ -309,7 +310,10 @@ locate.nas(sites_lr) # Fewer NA's for `snag` than for the upper river data set, 
 
 # More NA pools fixing
 sum(is.na(sites_lr$pool)) # we still have a bunch of NA's for pool
+```
 
+## Investigate problematic utm coords
+```{r}
 # Make a plot to see what's going on
 sites_lr %>% ggplot(aes(x = utm_e, y = utm_n))+
   geom_point(aes(col = pool)) # There are some very weird things going on with the UTM coordinates here.
@@ -451,11 +455,6 @@ sites_lr <- sites_lr %>% mutate(upperlower = "lower")
 sites_ur <- sites_ur %>% mutate(upperlower = "upper")
 ```
 
-## Perform join
-```{r}
-sites_upperlower <- rbind(sites_lr, sites_ur)
-```
-
 ## Remove ALT and OR1
 ```{r}
 sites_lr <- sites_lr %>% 
@@ -465,12 +464,52 @@ sites_lr <- sites_lr %>%
 sites_ur <- sites_ur %>% 
   filter(!(pool %in% c("ALT", "OR1"))) %>%
   droplevels()
-
-sites_upperlower <- sites_upperlower %>% 
-  filter(!(pool %in% c("ALT", "OR1"))) %>%
-  droplevels()
 ```
 
+## Remove bad coords
+### Upper
+```{r}
+sites_ur <- sites_ur %>%
+  dplyr::select(-c("utm_e", "utm_n"))
+
+# visualize zone
+sites_ur %>%
+  ggplot(aes(x = zone15e, y = zone15n, col = stratum))+
+  geom_point()
+
+# Remove bad points
+sites_ur <- sites_ur %>%
+  filter(zone15n > 2000000)
+
+# visualize
+sites_ur %>%
+  ggplot(aes(x = zone15e, y = zone15n, col = stratum))+
+  geom_point()
+```
+### Lower
+```{r}
+sites_lr <- sites_lr %>%
+  dplyr::select(-c("utm_e", "utm_n"))
+
+# visualize zone
+sites_lr %>%
+  ggplot(aes(x = zone15e, y = zone15n, col = stratum))+
+  geom_point()
+
+# Remove bad points
+sites_lr <- sites_lr %>%
+  filter(zone15e > 600000 & zone15e < 900000)
+
+# visualize
+sites_lr %>%
+  ggplot(aes(x = zone15e, y = zone15n, col = stratum))+
+  geom_point()
+```
+
+## Perform join
+```{r}
+sites_upperlower <- rbind(sites_lr, sites_ur)
+```
 
 ## Save data
 ```{r}
