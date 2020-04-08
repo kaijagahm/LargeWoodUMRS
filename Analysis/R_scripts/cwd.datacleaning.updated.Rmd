@@ -515,7 +515,7 @@ sites_ur <- sites_ur %>%
   dplyr::mutate(stratum_collapsed = 
                   case_when(stratum %in% c("BWC-O", "BWC-S") ~ "BWC",
                             stratum %in% c("IMP-O", "IMP-S") ~ "IMP",
-                            stratum %in% c("MCB-U", "MCB-W") ~ "MCB",
+                            stratum %in% c("MCB-U") ~ "MCB",
                             stratum  == "SCB" ~ "SCB"))
 sites_ur <- sites_ur %>% 
   mutate(stratum = stratum_collapsed) %>%
@@ -533,7 +533,7 @@ sites_lr <- sites_lr %>%
   dplyr::mutate(stratum_collapsed = 
                   case_when(stratum %in% c("BWC-O", "BWC-S") ~ "BWC",
                             stratum %in% c("IMP-O", "IMP-S") ~ "IMP",
-                            stratum %in% c("MCB-U", "MCB-W") ~ "MCB",
+                            stratum %in% c("MCB-U") ~ "MCB",
                             stratum  == "SCB" ~ "SCB"))
 sites_lr <- sites_lr %>% 
   mutate(stratum = stratum_collapsed) %>%
