@@ -506,6 +506,43 @@ sites_lr %>%
   geom_point()
 ```
 
+## Aggregate strata
+We want to end up with BWC, IMP, MCB, and SCB.
+
+### Upper
+```{r}
+sites_ur <- sites_ur %>% 
+  dplyr::mutate(stratum_collapsed = 
+                  case_when(stratum %in% c("BWC-O", "BWC-S") ~ "BWC",
+                            stratum %in% c("IMP-O", "IMP-S") ~ "IMP",
+                            stratum %in% c("MCB-U", "MCB-W") ~ "MCB",
+                            stratum  == "SCB" ~ "SCB"))
+sites_ur <- sites_ur %>% 
+  mutate(stratum = stratum_collapsed) %>%
+  filter(!is.na(stratum)) %>%
+  dplyr::select(-stratum_collapsed)
+
+table(sites_ur$stratum, exclude = NULL)
+```
+
+### Lower
+```{r}
+table(sites_lr$stratum)
+
+sites_lr <- sites_lr %>% 
+  dplyr::mutate(stratum_collapsed = 
+                  case_when(stratum %in% c("BWC-O", "BWC-S") ~ "BWC",
+                            stratum %in% c("IMP-O", "IMP-S") ~ "IMP",
+                            stratum %in% c("MCB-U", "MCB-W") ~ "MCB",
+                            stratum  == "SCB" ~ "SCB"))
+sites_lr <- sites_lr %>% 
+  mutate(stratum = stratum_collapsed) %>%
+  filter(!is.na(stratum)) %>%
+  dplyr::select(-stratum_collapsed)
+
+table(sites_lr$stratum, exclude = NULL)
+```
+
 ## Perform join
 ```{r}
 sites_upperlower <- rbind(sites_lr, sites_ur)
