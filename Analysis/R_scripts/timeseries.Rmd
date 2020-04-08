@@ -65,7 +65,7 @@ plotfun <- function(pooldata, stats){
   
   # DEFINE THE CURRENT POOL
   if(length(unique(pooldata$pool)) == 1){
-    current_pool <- pooldata$pool[1] %>% droplevels() %>% as.character()
+    current_pool <- pooldata$pool[1]
   }else{
     stop('This data set contains data from more than one pool. Make sure to subset first!')
   }
@@ -162,19 +162,18 @@ stats_stratum
 ```
 
 #### Plot for each
-# [HAVE TO CHANGE THIS SO IT WORKS FOR STRATA--re-write the above function?]
 ```{r}
 plotfun_strata <- function(poolstratumdata, stats){
   # Define the current pool
   if(length(unique(poolstratumdata$pool)) == 1){
-    current_pool <- poolstratumdata$pool[1] %>% droplevels() %>% as.character()
+    current_pool <- poolstratumdata$pool[1]
   }else{
     stop('This data set contains data from more than one pool. Make sure to subset first!')
   }
   
    # Define the current stratum
   if(length(unique(poolstratumdata$stratum)) == 1){
-    current_stratum <- poolstratumdata$stratum[1] %>% droplevels() %>% as.character()
+    current_stratum <- poolstratumdata$stratum[1]
   }else{
     stop('This data set contains data from more than one stratum. Make sure to subset first!')
   }
