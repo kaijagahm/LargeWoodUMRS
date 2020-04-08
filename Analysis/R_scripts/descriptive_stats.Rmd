@@ -29,11 +29,6 @@ sites_upperlower <- sites_upperlower %>% droplevels()
 sites_upperlower %$% table(stratum)
 ```
 
-## Exclude strata: BWC-O and MCB-W
-```{r}
-sites_upperlower <- sites_upperlower %>% filter(stratum %notin% c("BWC-O", "MCB-W")) %>% droplevels()
-```
-
 ## Exclude sites NA for snag and/or pool
 ```{r}
 sites_upperlower <- sites_upperlower %>% filter(!is.na(snag), !is.na(pool))
@@ -46,6 +41,8 @@ summary_all <- sites_upperlower %>% dplyr::summarize(npoints = n(),
                                               wood = sum(snag == 1),
                                               nowood = sum(snag == 0),
                                               propwood = wood/npoints)
+
+summary_all
 ```
 
 ## By pool
@@ -125,6 +122,7 @@ summary_stratumpool <- sites_upperlower %>% group_by(pool, stratum) %>%
             wood = sum(snag == 1),
             nowood = sum(snag == 0),
             propwood = wood/npoints) %>% as.data.frame()
+summary_stratumpool
 
 # Test for significant differences
 chisq.test(summary_stratumpool[,c("wood", "nowood")])
