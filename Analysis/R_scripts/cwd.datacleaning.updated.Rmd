@@ -44,6 +44,13 @@ lc_2010 <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/lc_2010.txt")
   # 2010 landcover info
 ```
 
+## Clean fish data
+```{r}
+fish_data_EF <- fish_data_EF %>%
+  filter(sitetype %in% c(0, 1), # remove sitetype 2
+         gear == "D") # remove fyke net (we want only D = daytime electrofishing)
+```
+
 ## Initialize the data frame
 ```{r}
 sites_ur <- rivmi %>% dplyr::select(TARGET_FID, Field1, stratum, lcode, sdate, utm_e, utm_n, snag, RIVER_MILE)
@@ -211,6 +218,11 @@ locate.nas(sites_ur)
 # These seem fine
 ```
 
+### Remove sites NA for snag
+```{r}
+sites_ur <- sites_ur %>% filter(!is.na(snag))
+```
+
 ### Exclude UXO
 ```{r}
 sites_ur <- sites_ur %>% filter(stratum != "UXO")
@@ -221,9 +233,14 @@ sites_ur <- sites_ur %>% filter(stratum != "UXO")
 sites_ur <- sites_ur %>% filter(summary != "7") # a code of 7 in the summary column means that the observations are pseudo-shoreline and should be excluded.
 ```
 
+### Check NA's again
+```{r}
+locate.nas(sites_ur)
+```
+
 ## Save data
 ```{r}
-#save(sites_ur, file = "../data/outputs/sites_ur.Rda")
+save(sites_ur, file = "../data/outputs/sites_ur.Rda")
 ```
 
 # _______________________
@@ -253,6 +270,13 @@ terrestrial_forests <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/Te
 sites_forest <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_forest2.txt") # nearest forest info for each point
 
 lc_2010 <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/lc_20102.txt") # landcover info
+```
+
+## Clean fish data
+```{r}
+ltrm_fish_data <- ltrm_fish_data %>%
+  filter(sitetype %in% c(0, 1), # remove sitetype 2
+         gear == "D") # remove fyke net (we want only D = daytime electrofishing)
 ```
 
 ## Initialize the data frame
@@ -400,6 +424,12 @@ for(i in colstomodify){
 ### Drop empty pools
 ```{r}
 sites_lr$pool <- droplevels(sites_lr$pool)
+```
+
+### Remove NA's for snag
+```{r}
+sites_lr <- sites_lr %>%
+  filter(!is.na(snag))
 ```
 
 ### Investigate NA's
