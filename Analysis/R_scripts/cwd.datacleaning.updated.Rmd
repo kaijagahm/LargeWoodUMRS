@@ -426,12 +426,6 @@ for(i in colstomodify){
 sites_lr$pool <- droplevels(sites_lr$pool)
 ```
 
-### Remove NA's for snag
-```{r}
-sites_lr <- sites_lr %>%
-  filter(!is.na(snag))
-```
-
 ### Investigate NA's
 ```{r}
 locate.nas(sites_lr)
@@ -451,6 +445,12 @@ sites_lr <- sites_lr %>% filter(stratum != "UXO")
 ### Remove pseudo-shoreline observations
 ```{r}
 sites_lr <- sites_lr %>% filter(summary != "7") # a code of 7 in the summary column means that the observations are pseudo-shoreline and should be excluded.
+```
+
+### Remove NA's for snag
+```{r}
+sites_lr <- sites_lr %>%
+  filter(!is.na(snag))
 ```
 
 ## Save data
@@ -534,31 +534,6 @@ sites_lr <- sites_lr %>%
 sites_lr %>%
   ggplot(aes(x = zone15e, y = zone15n, col = stratum))+
   geom_point()
-```
-
-## Aggregate strata
-We want to end up with BWC, IMP, MCB, and SCB.
-
-### Upper
-```{r}
-sites_ur <- sites_ur %>% 
-  dplyr::mutate(stratum_collapsed = 
-                  case_when(stratum %in% c("BWC-O", "BWC-S") ~ "BWC",
-                            stratum %in% c("IMP-O", "IMP-S") ~ "IMP",
-                            stratum %in% c("MCB-U") ~ "MCB",
-                            stratum  == "SCB" ~ "SCB"))
-```
-
-### Lower
-```{r}
-table(sites_lr$stratum)
-
-sites_lr <- sites_lr %>% 
-  dplyr::mutate(stratum_collapsed = 
-                  case_when(stratum %in% c("BWC-O", "BWC-S") ~ "BWC",
-                            stratum %in% c("IMP-O", "IMP-S") ~ "IMP",
-                            stratum %in% c("MCB-U") ~ "MCB",
-                            stratum  == "SCB" ~ "SCB"))
 ```
 
 ## Perform join
