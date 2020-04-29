@@ -32,7 +32,14 @@ Maybe look into Zotero extension in google docs?
 Removed ALT and OR1 from data
 Removed utm_e and utm_n columns. Now we're using zone15e and zone15n. Removed a few (fewer than 10) points that had mistakes for those coords.
 Aggregated stratum categories so now we only have the four listed in the manuscript: BWC, MCB, SCB, IMP.
+Discovered a problem with the data: numbers of observations aren't lining up. Refrained from editing numbers/percentages in the document until we figure out what's going on.
 
+8 April 2020
+To do:
+We want only sites 0 or 1, not 2
+Only gear = D (day electrofishing), not F
+Exclude NA's for snag
+Check that all of that went through when I did the join. 
   
   
   
