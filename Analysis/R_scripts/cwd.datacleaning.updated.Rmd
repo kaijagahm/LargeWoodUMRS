@@ -517,12 +517,6 @@ sites_ur <- sites_ur %>%
                             stratum %in% c("IMP-O", "IMP-S") ~ "IMP",
                             stratum %in% c("MCB-U") ~ "MCB",
                             stratum  == "SCB" ~ "SCB"))
-sites_ur <- sites_ur %>% 
-  mutate(stratum = stratum_collapsed) %>%
-  filter(!is.na(stratum)) %>%
-  dplyr::select(-stratum_collapsed)
-
-table(sites_ur$stratum, exclude = NULL)
 ```
 
 ### Lower
@@ -535,17 +529,15 @@ sites_lr <- sites_lr %>%
                             stratum %in% c("IMP-O", "IMP-S") ~ "IMP",
                             stratum %in% c("MCB-U") ~ "MCB",
                             stratum  == "SCB" ~ "SCB"))
-sites_lr <- sites_lr %>% 
-  mutate(stratum = stratum_collapsed) %>%
-  filter(!is.na(stratum)) %>%
-  dplyr::select(-stratum_collapsed)
-
-table(sites_lr$stratum, exclude = NULL)
 ```
 
 ## Perform join
 ```{r}
 sites_upperlower <- rbind(sites_lr, sites_ur)
+
+sites_upperlower %>% filter(!(stratum %in% c("MCB-W", "BWC-O"))) %>%
+  filter(!is.na(snag)) %>%
+  locate.nas()
 ```
 
 ## Save data
