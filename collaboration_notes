@@ -40,6 +40,14 @@ We want only sites 0 or 1, not 2
 Only gear = D (day electrofishing), not F
 Exclude NA's for snag
 Check that all of that went through when I did the join. 
+
+29 April 2020
+desired changes:
+remove sitetype 2 [DONE BOTH]
+remove gear = F [DONE BOTH]
+exclude NA's for snag [DONE BOTH]
+remove environmental vars [DONE BOTH]
+check numbers
   
   
   
