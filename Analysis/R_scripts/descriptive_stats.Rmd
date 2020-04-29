@@ -27,8 +27,6 @@ load("../data/outputs/sites_lr.Rda")
 ```{r}
 sites_upperlower <- sites_upperlower %>% droplevels()
 sites_upperlower %$% table(stratum)
-
-
 ```
 
 ## Exclude sites NA for snag and/or pool

@@ -533,6 +533,33 @@ sites_upperlower %>% filter(!(stratum %in% c("MCB-W", "BWC-O"))) %>%
   locate.nas()
 ```
 
+## NA pools
+Why do we still have some pool NA's?
+```{r}
+napools <- sites_upperlower %>% filter(is.na(pool))
+head(napools)
+
+table(napools$upperlower, exclude = FALSE)
+# all the NA pools are in the lower river, for some reason.
+
+# make a map of the NA points
+napools %>%
+  ggplot(aes(x = zone15e, y = zone15n))+
+  geom_point()
+
+# map of the lower river for comparison
+sites_lr %>% filter(!is.na(pool)) %>%
+  ggplot(aes(x = zone15e, y = zone15n, col = pool))+
+  geom_point()
+
+# Assign pools based on zone15n
+sites_upperlower <- sites_upperlower %>%
+  mutate(pool = case_when(is.na(pool) & zone15n > 4400000 ~ "LAG",
+                          is.na(pool) & zone15n < 4400000 & zone15n > 4200000 ~ "P26",
+                          is.na(pool) & zone15n < 4200000 ~ "OR2",
+                          TRUE ~ as.character(pool)))
+```
+
 ## Save data
 ```{r}
 save(sites_upperlower, file = "../data/outputs/sites_upperlower.Rda")
