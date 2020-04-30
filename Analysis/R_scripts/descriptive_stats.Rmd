@@ -29,10 +29,150 @@ sites_upperlower <- sites_upperlower %>% droplevels()
 sites_upperlower %$% table(stratum)
 ```
 
-## Exclude sites NA for snag and/or pool
+## Check for NA's in snag or pool
 ```{r}
-sites_upperlower <- sites_upperlower %>% filter(!is.na(snag), !is.na(pool))
+sites_upperlower %>% filter(is.na(snag) | is.na(pool)) # good!
 ```
+
+# Update strata
+## Exclude MCB-W and BWC-O
+```{r}
+sites_upperlower <- sites_upperlower %>% 
+  filter(!(stratum %in% c("MCB-W", "BWC-O"))) %>%
+  droplevels()
+
+sites_upperlower <- sites_upperlower %>%
+  mutate(stratum = case_when(stratum == "BWC-S" ~ "BWC",
+                             stratum == "IMP-S" ~ "IMP",
+                             stratum == "MCB-U" ~ "MCB",
+                             TRUE ~ as.character(stratum)))
+
+table(sites_upperlower$stratum, exclude = NULL)
+```
+
+
+# Investigate numbers
+The numbers above are just slightly _higher_ than the ones in the manuscript. Part of that can probably be accounted for by the missing pool numbers, which I just added, but some problems are left unexplained.
+
+Load old data to verify it against the current data
+```{r}
+load("~/Downloads/all_reduced_clean.Rda")
+load("~/Downloads/all2_reduced_clean.Rda")
+
+# rename data
+old_upper <- all_reduced_clean
+old_lower <- all2_reduced_clean
+
+# created combined dataset (old data)
+old_upperlower <- bind_rows(old_upper, old_lower)
+
+# remove some environmental vars
+old_upperlower <- old_upperlower %>%
+  dplyr::select(-c(near_terr_dist, near_terr_class_7, near_terr_name, near_forest_dist))
+names(old_upperlower)
+
+# Reassign strata
+old_upperlower <- old_upperlower %>%
+  mutate(stratum = case_when(stratum == "BWC-S" ~ "BWC",
+                             stratum == "IMP-S" ~ "IMP",
+                             stratum == "MCB-U" ~ "MCB",
+                             TRUE ~ as.character(stratum))) %>%
+  filter(stratum != "BWC-O")
+
+# get stratum breakdown
+table(old_upperlower$stratum, exclude = NULL) #these are the numbers we originally had in the manuscript
+
+# get stratum breakdown for current sites
+table(sites_upperlower$stratum, exclude = NULL)
+
+# Reassign pools
+old_upperlower <- old_upperlower %>%
+  mutate(pool = case_when(pool == "13" ~ "P13",
+                          pool == "26" ~ "P26",
+                          pool == "4" ~ "P04",
+                          pool == "8" ~ "P08",
+                          pool == "LG" ~ "LAG",
+                          pool == "OR" ~ "OR2",
+                          TRUE ~ pool))
+
+# comparing these two tables shows that there are discrepancies in almost every pool-by-stratum category. So the issue is not confined to a few. Thus probably a more general data quality issue, or having to do with a stratum- or pool-nonspecific factor. 
+ 
+# differences between new and old sites, broken down by stratum and pool
+with(sites_upperlower, table(stratum, pool)) %>% as.matrix() - with(old_upperlower, table(stratum, pool)) %>% as.matrix() 
+# Now let's look only at the ones in the new dataset that aren't the same as the ones in the old
+# by barcode
+sites_upperlower %>%
+  filter(!(barcode %in% old_upperlower$barcode)) %$%
+  table(stratum, pool)
+
+old_upperlower %>%
+  filter(!(barcode %in% sites_upperlower$barcode)) %$%
+  table(stratum, pool)
+
+# It's concerning that this goes both ways. There are some new sites that weren't represented in the old sites, and some old sites that weren't represented in the new sites
+# Hopefully, the old sites not represented in the new sites will be the pseudo-shoreline sites. 
+
+# investigate the old sites not represented in the new sites
+old_df <- old_upperlower %>%
+  filter(!(barcode %in% sites_upperlower$barcode)) %$%
+  table(stratum, pool) %>%
+  as.data.frame()
+
+# got these data manually from going back and examining the pseudoshoreline observations before I removed them.
+ps_df <- data.frame(stratum = c("BWC", "MCB", "SCB", "IMP", "MCB", "IMP", "BWC", "MCB", "SCB", "MCB", "SCB", "BWC", "IMP", "MCB", "SCB"),
+                    pool = c("P04", "P04", "P04", "P08", "P08", "P13", "LAG", "LAG", "LAG", "OR2", "OR2", "P26", "P26", "P26", "P26"),
+                    freq_ps = c(208, 22, 40, 5, 1, 1, 117, 81, 88, 3, 1, 9, 1, 1, 4))
+
+diffs_df <- left_join(old_df, ps_df, by = c("stratum", "pool"))
+diffs_df$freq_ps[is.na(diffs_df$freq_ps)] <- 0 # change NA to 0
+
+diffs_df <- diffs_df %>%
+  mutate(leftover_problems = Freq-freq_ps)
+
+diffs_df # okay, looking at the leftover_problems column, we have a couple negative numbers. That is weird. Means that some of what showed up as pseudo-shoreline observations in the new data got removed by other means from the old data (back when we weren't yet considering pseudo-shoreline.)
+```
+
+# Investigation of barcode mismatches (both ways)
+```{r}
+# Load pseudoshoreline data
+load("../data/outputs/ps_upperlower.Rda")
+
+# get missing data each way
+missing_from_new <- old_upperlower %>% filter(!(barcode %in% sites_upperlower$barcode))
+missing_from_old <- sites_upperlower %>% filter(!(barcode %in% old_upperlower$barcode))
+
+missing_from_new$barcode %in% ps_upperlower$barcode # most of the sites missing from the new data are attributable to the pseudoshoreline obs
+
+missing_from_new <- missing_from_new %>%
+  mutate(ps = case_when(barcode %in% ps_upperlower$barcode ~ T,
+                        TRUE ~ FALSE))
+troublesome_barcodes <- missing_from_new %>% filter(ps == FALSE) %>% pull(barcode) # pull barcodes from the ones that remain problematic
+
+# plot the new sites, colored by pool. Add the still-problematic sites, to see if this is a coordinates issue. 
+sites_upperlower %>%
+  ggplot(aes(x = zone15e, y = zone15n, col = pool))+
+  geom_point()+
+  geom_point(data = missing_from_new %>% filter(!ps), aes(x = utm_e, y = utm_n), col = "black") # the still missing sites fall within reasonable bounds for coordinates, but interestingly they're all in OR2. That's interesting. 
+
+troublesome_barcodes # here are the barcodes of the ones that are still problematic, after accounting for the pseudoshoreline obs.
+
+missing_from_new %>% filter(barcode %in% troublesome_barcodes)
+# I went back through the data cleaning pipeline to figure out when these four observations disappeared. Seems that in the new data, they were classified as OR1, not OR2, and so they were removed in the step where I excluded ALT and OR1.
+
+# Next step is to go back through the data pipeline and see if they were classified as OR1 in the original data, or if they somehow got changed from OR2 to OR1. 
+# Ok, in the original fish data, these were classified as OR, not OR1 or OR2. When the aa dataset got joined in, they were given the classification OR1, and were thus excluded.
+# Lookin at missing_from_new now (which is derived from the old data), we see that despite "pool" being listed as OR2, the uniq_id shows these observations as belonging to OR1. Thus, I'm going to conclude that the OR2 in the old data was a mistake, and that these observations are supposed to be part of OR1. Therefore, it was correct to exclude them from the new data, so nothing is wrong here.
+
+# I have now investigated all observations that were present in the old data but are missing from the new data. Now time to do the other side: observations present in the new data that were missing from the old data.
+```
+
+
+
+
+
+
+
+
 
 # Summaries
 ## Overall
