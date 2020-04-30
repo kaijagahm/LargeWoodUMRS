@@ -47,7 +47,12 @@ remove sitetype 2 [DONE BOTH]
 remove gear = F [DONE BOTH]
 exclude NA's for snag [DONE BOTH]
 remove environmental vars [DONE BOTH]
-check numbers
+check numbers [CHECKED]
+
+got the numbers to *almost* match up, but there are still some discrepancies. I have slightly more sites now than were originally included in the manuscript. Some of these are attributable to sites that formerly had pool = NA, but some of them are not.
+
+30 April 2020
+Begin comparing the current data set to the original data set used to create the manuscript, in order to try and determine where the number discrepancies come from.
   
   
   
