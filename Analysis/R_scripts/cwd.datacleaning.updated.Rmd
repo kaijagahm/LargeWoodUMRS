@@ -87,17 +87,11 @@ sites_ur <- left_join(sites_ur, sites_aa_5m, by = c("stratum", "lcode", "sdate",
 
 ## Clean aquatic areas
 ```{r}
-# "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". I'd like these to have values of NA, not 0. 
+# "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". 
 
-# get start and end indices for columns.
-start <- which(names(sites_ur) == "OBJECTID")
-end <- which(names(sites_ur) == "year_phot")
-
-for(i in 1:nrow(sites_ur)){
-  if(sites_ur[i,"Perimeter"] == 0 & sites_ur[i,"Area"] == 0 & sites_ur[i,"avg_fetch"] == 0){
-    sites_ur[i, start:end] <- NA
-  }
-} # there's probably a better way to do this, but whatever.
+# remove sites that are NA for Perimeter, Area, and avg_fetch (i.e. don't intersect the aquatic areas layer)
+sites_ur <- sites_ur %>%
+  filter(!(Perimeter == 0 & Area == 0 & avg_fetch == 0))
 ```
 
 ```{r}
@@ -309,17 +303,10 @@ sites_lr <- left_join(sites_lr, sites_aa_5m, by = c("stratum", "lcode", "sdate",
 
 ## Clean aquatic areas
 ```{r}
-# "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". I'd like these to have values of NA, not 0.
+# "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". 
 
-# get start and end indices for columns.
-start <- which(names(sites_lr) == "OBJECTID")
-end <- which(names(sites_lr) == "year_phot")
-
-for(i in 1:nrow(sites_lr)){
-  if(sites_lr[i,"Perimeter"] == 0 & sites_lr[i,"Area"] == 0 & sites_lr[i,"avg_fetch"] == 0){
-    sites_lr[i, start:end] <- NA
-  }
-} # there's probably a better way to do this, but whatever.
+sites_lr <- sites_lr %>% # remove observations that are missing values for several environmental vars
+  filter(!(Perimeter == 0 & Area == 0 & avg_fetch == 0))
 ```
 
 ## Fix pools
@@ -447,7 +434,7 @@ sites_lr <- sites_lr %>%
 
 ## Save data
 ```{r}
-#save(sites_lr, file = "../data/outputs/sites_lr.Rda")
+save(sites_lr, file = "../data/outputs/sites_lr.Rda")
 ```
 
 # __________________
