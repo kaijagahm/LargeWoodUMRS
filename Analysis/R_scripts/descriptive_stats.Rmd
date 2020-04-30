@@ -98,7 +98,8 @@ old_upperlower <- old_upperlower %>%
 # comparing these two tables shows that there are discrepancies in almost every pool-by-stratum category. So the issue is not confined to a few. Thus probably a more general data quality issue, or having to do with a stratum- or pool-nonspecific factor. 
  
 # differences between new and old sites, broken down by stratum and pool
-with(sites_upperlower, table(stratum, pool)) %>% as.matrix() - with(old_upperlower, table(stratum, pool)) %>% as.matrix() 
+with(sites_upperlower, table(stratum, pool)) %>% as.matrix() - with(old_upperlower, table(stratum, pool)) %>% as.matrix()
+
 # Now let's look only at the ones in the new dataset that aren't the same as the ones in the old
 # by barcode
 sites_upperlower %>%
@@ -176,8 +177,9 @@ missing_from_old # looks like all these sites are NA for a bunch of environmenta
 
 # went back and checked: the join was in fact not based on pool. And I've noted that in some places, even when fixedpool == FALSE, the information is still missing. So I think these stem from a common cause of the intersection being bad.
 
-# also went back into the old data cleaning code and saw that in fact, we did want to exclude the ones that are NA for a bunch of these environmental variables. I'll go back and do that now. 
+# also went back into the old data cleaning code and saw that in fact, we did want to exclude the ones that are NA for a bunch of these environmental variables (didn't intersect the aquatic areas layer). I'll go back and do that now. 
 
+# After having done that, there are still a bunch that are missing from old but included in new. Have to figure out why this is.
 ```
 
 
