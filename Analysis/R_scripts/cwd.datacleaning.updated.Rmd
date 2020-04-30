@@ -193,7 +193,7 @@ sites_ur <- sites_ur %>% rename(perimeter = Perimeter,
 ```{r}
 factors <- sites_ur %>% dplyr::select_if(., is.factor) %>% names()
 
-colstomodify <- sites_ur %>% dplyr::select(-factors) %>% dplyr::select(-barcode) %>% names()
+colstomodify <- sites_ur %>% dplyr::select(-all_of(factors)) %>% dplyr::select(-barcode) %>% names()
                
 for(i in colstomodify){
   sites_ur[,i][sites_ur[,i] < -5000] <- NA
@@ -224,6 +224,8 @@ sites_ur <- sites_ur %>% filter(stratum != "UXO")
 
 ### Remove pseudo-shoreline observations
 ```{r}
+ps_ur <- sites_ur %>% filter(summary == "7")
+ps_ur %$% table(stratum, pool)
 sites_ur <- sites_ur %>% filter(summary != "7") # a code of 7 in the summary column means that the observations are pseudo-shoreline and should be excluded.
 ```
 
@@ -406,7 +408,7 @@ colstomodify <- sites_lr %>% dplyr::select(-factors) %>% names()
                
 for(i in colstomodify){
   sites_lr[,i][sites_lr[,i] < -5000] <- NA
-}                                   
+}                         
 ```
 
 ### Drop empty pools
@@ -432,6 +434,8 @@ sites_lr <- sites_lr %>% filter(stratum != "UXO")
 
 ### Remove pseudo-shoreline observations
 ```{r}
+ps_lr <- sites_lr %>% filter(summary == "7")
+ps_lr %$% table(stratum, pool)
 sites_lr <- sites_lr %>% filter(summary != "7") # a code of 7 in the summary column means that the observations are pseudo-shoreline and should be excluded.
 ```
 
@@ -541,6 +545,7 @@ head(napools)
 
 table(napools$upperlower, exclude = FALSE)
 # all the NA pools are in the lower river, for some reason.
+table(napools$stratum)
 
 # make a map of the NA points
 napools %>%
@@ -554,11 +559,20 @@ sites_lr %>% filter(!is.na(pool)) %>%
 
 # Assign pools based on zone15n
 sites_upperlower <- sites_upperlower %>%
+  mutate(fixedpool = case_when(is.na(pool) ~ TRUE,
+                               TRUE ~ FALSE)) %>%
   mutate(pool = case_when(is.na(pool) & zone15n > 4400000 ~ "LAG",
                           is.na(pool) & zone15n < 4400000 & zone15n > 4200000 ~ "P26",
                           is.na(pool) & zone15n < 4200000 ~ "OR2",
                           TRUE ~ as.character(pool)))
 ```
+
+# Save psedoshoreline obs
+```{r}
+ps_upperlower <- bind_rows(ps_ur, ps_lr)
+save(ps_upperlower, file = "../data/outputs/ps_upperlower.Rda")
+```
+
 
 ## Save data
 ```{r}
