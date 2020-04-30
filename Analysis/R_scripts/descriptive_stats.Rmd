@@ -132,14 +132,13 @@ diffs_df <- diffs_df %>%
 diffs_df # okay, looking at the leftover_problems column, we have a couple negative numbers. That is weird. Means that some of what showed up as pseudo-shoreline observations in the new data got removed by other means from the old data (back when we weren't yet considering pseudo-shoreline.)
 ```
 
-# Investigation of barcode mismatches (both ways)
+# Investigation of obs. present in old, missing from new
 ```{r}
 # Load pseudoshoreline data
 load("../data/outputs/ps_upperlower.Rda")
 
 # get missing data each way
 missing_from_new <- old_upperlower %>% filter(!(barcode %in% sites_upperlower$barcode))
-missing_from_old <- sites_upperlower %>% filter(!(barcode %in% old_upperlower$barcode))
 
 missing_from_new$barcode %in% ps_upperlower$barcode # most of the sites missing from the new data are attributable to the pseudoshoreline obs
 
@@ -166,6 +165,20 @@ missing_from_new %>% filter(barcode %in% troublesome_barcodes)
 # I have now investigated all observations that were present in the old data but are missing from the new data. Now time to do the other side: observations present in the new data that were missing from the old data.
 ```
 
+# Investigation of obs. present in new, missing from old
+```{r}
+missing_from_old <- sites_upperlower %>% filter(!(barcode %in% old_upperlower$barcode))
+missing_from_old # looks like all these sites are NA for a bunch of environmental predictors. Probably I filtered these out in the old observations, but left them in in the new.
+
+# Another thing I notice here is that the observations where fixedpool == FALSE (i.e. which already had pools; I didn't have to assign them based on utm coordinates) have less missing data than the ones where fixedpool == TRUE. That makes me think that the join to the aquatic areas dataset must have been based on pools. 
+
+# Going to go back and try assigning the missing pools based on utm coordinates earlier in the process, before the join, to see if we can get some of that information back. 
+
+# went back and checked: the join was in fact not based on pool. And I've noted that in some places, even when fixedpool == FALSE, the information is still missing. So I think these stem from a common cause of the intersection being bad.
+
+# also went back into the old data cleaning code and saw that in fact, we did want to exclude the ones that are NA for a bunch of these environmental variables. I'll go back and do that now. 
+
+```
 
 
 
