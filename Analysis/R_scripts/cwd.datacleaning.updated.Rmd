@@ -211,9 +211,9 @@ locate.nas(sites_ur)
 sites_ur <- sites_ur %>% filter(!is.na(snag))
 ```
 
-### Exclude UXO
+### Exclude UXO and TWZ
 ```{r}
-sites_ur <- sites_ur %>% filter(stratum != "UXO")
+sites_ur <- sites_ur %>% filter(!(stratum %in% c("UXO", "TWZ")))
 ```
 
 ### Remove pseudo-shoreline observations
@@ -414,9 +414,9 @@ locate.nas(sites_aa_5m) # There are no NA's in the original file, so there must 
 ```
 
 
-### Exclude UXO
+### Exclude UXO and TWZ
 ```{r}
-sites_lr <- sites_lr %>% filter(stratum != "UXO")
+sites_lr <- sites_lr %>% filter(!(stratum %in% c("UXO", "TWZ")))
 ```
 
 ### Remove pseudo-shoreline observations
