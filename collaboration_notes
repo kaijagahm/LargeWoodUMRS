@@ -53,6 +53,12 @@ got the numbers to *almost* match up, but there are still some discrepancies. I 
 
 30 April 2020
 Begin comparing the current data set to the original data set used to create the manuscript, in order to try and determine where the number discrepancies come from.
+Resolved all issues of observations being missing from new, present in old. Working on issues where obs are missing from old, present in new.
+
+5 May 2020
+This is getting too confusing. I attempted to keep tracing the problems, and though I fixed some things, there are still a lot of NA's, indicating that some join went wrong somewhere...
+
+I'm going to go back to basics, create an entirely new script, and refer back to Molly's processing notes to get this figured out. 
   
   
   
