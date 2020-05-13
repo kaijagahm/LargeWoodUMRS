@@ -99,13 +99,13 @@ upper <- upper %>%
 # examine the strata present
 #table(upper$stratum)
 
-# Exclude UXO and TWZ
+# Exclude UXO, TWZ, MCB-W, and BWC-O
 upper <- upper %>%
-  filter(!(stratum %in% c("TWZ", "UXO")))
+  filter(!(stratum %in% c("TWZ", "UXO", "MCB-W", "BWC-O")))
 
 # Recode strata
 upper <- upper %>%
-  mutate(stratum = fct_recode(stratum, BWC = "BWC-O", BWC = "BWC-S", IMP = "IMP-S", IMP = "IMP-O", MCB = "MCB-U", MCB = "MCB-W", SCB = "SCB"))
+  mutate(stratum = fct_recode(stratum, BWC = "BWC-S", IMP = "IMP-S", IMP = "IMP-O", MCB = "MCB-U", SCB = "SCB"))
 ```
 
 ```{r sitetype-upper}
