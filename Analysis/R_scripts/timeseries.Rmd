@@ -23,6 +23,8 @@ load("../data/outputs/summary_poolyearstratum.Rda")
 load("../data/outputs/summary_stratum.Rda")
 load("../data/outputs/summary_stratumpool.Rda")
 load("../data/outputs/summary_yearpool.Rda")
+
+summary_pool
 ```
 
 # Time series
@@ -42,19 +44,22 @@ summary_yearpool %>% ggplot(aes(x = as.numeric(year), y = propwood))+
 head(summary_yearpool)
 summary_yearpool <- summary_yearpool %>% mutate(year = as.numeric(year))
 
-stats <- summary_yearpool %>% group_by(pool) %>% summarize(changepoint = pettitt.test(propwood)$estimate,
-                                                  u_stat = pettitt.test(propwood)$statistic,
-                                                  pt_pval = round(pettitt.test(propwood)$p.value, 3),
-                                                  changeyear = year[changepoint] + 0.5,
-                                                  mk_z = round(mk.test(propwood)$statistic, 3),
-                                                  mk_pval = round(mk.test(propwood)$p.value, 3),
-                                                  begyear = min(year),
-                                                  endyear = max(year),
-                                                  mn1 = round(mean(propwood[1:changepoint]), 3),
-                                                  mn2 = round(mean(propwood[(changepoint + 1):n()]), 3))
+stats <- summary_yearpool %>% group_by(pool) %>% summarize(changepoint = pettitt.test(propwood)$estimate[1],
+                                                           u_stat = pettitt.test(propwood)$statistic,
+                                                           pt_pval = round(pettitt.test(propwood)$p.value, 3),
+                                                           changeyear = year[changepoint] + 0.5,
+                                                           mk_z = round(mk.test(propwood)$statistic, 3),
+                                                           mk_pval = round(mk.test(propwood)$p.value, 3),
+                                                           begyear = min(year),
+                                                           endyear = max(year),
+                                                           mn1 = round(mean(propwood[1:changepoint]), 3),
+                                                           mn2 = round(mean(propwood[(changepoint + 1):n()]), 3))
 stats
 
 # this table shows results of the pettitt test and the mk test for the _overall_ dataset. It does not yet include trend analyses for subsections if a breakpoint was found.
+
+# Note: if there was more than one changepoint, I've taken the first.
+# FIX THIS LATER!
 ```
 
 
@@ -124,17 +129,24 @@ plotfun <- function(pooldata, stats){
                                 method = "lm",
                                 se = F,
                                 col = "black")}+
-    geom_point()
+    geom_point(size = 0.75)+
+    theme(axis.title.x = element_blank(),
+          axis.title.y = element_blank())
     return(p)
 }
 
 pools <- summary_yearpool$pool %>% unique() # get a vector of unique pools
 
+pool_plots <- vector(mode = "list", length = length(pools))
+
 for(i in 1:length(pools)){ # loop through the pools to make plots
   subset <- summary_yearpool %>% filter(pool == pools[i])
   pt <- plotfun(pooldata = subset, stats = stats)
-  print(pt)
+  pool_plots[[i]] <- pt
 }
+
+pools <- cowplot::plot_grid(plotlist = pool_plots)
+ggsave(pools, filename = "../data/outputs/pools_plots.png", width = 11, height = 6)
 ```
 
 ## By aquatic areas
@@ -163,6 +175,12 @@ stats_stratum
 
 #### Plot for each
 ```{r}
+plotfun_strata <- function(poolstratumdata, stats){
+  
+}
+
+
+
 plotfun_strata <- function(poolstratumdata, stats){
   # Define the current pool
   if(length(unique(poolstratumdata$pool)) == 1){
@@ -234,7 +252,9 @@ plotfun_strata <- function(poolstratumdata, stats){
                                 method = "lm",
                                 se = F,
                                 col = "black")}+
-    geom_point()
+    geom_point(size = 0.75)+
+    theme(axis.title.x = element_blank(),
+          axis.title.y = element_blank())
     return(p)
 }
 
@@ -243,13 +263,14 @@ poolstrata <- stats_stratum %>%
   dplyr::select(pool, stratum) %>%
   distinct()
 
-stats_stratum
-
-
+plots_list <- vector(mode = "list", length = nrow(poolstrata))
 for(i in 1:nrow(poolstrata)){ # loop through the pool/stratum combos
   subset <- summary_poolyearstratum %>% filter(pool == poolstrata$pool[i], stratum == poolstrata$stratum[i])
   pt <- plotfun_strata(poolstratumdata = subset, stats = stats_stratum)
-  print(pt)
+  plots_list[[i]] <- pt
 }
+
+strata_plots <- cowplot::plot_grid(plotlist = plots_list)
+ggsave(strata_plots, filename = "../data/outputs/strata_plots.png", width = 11, height = 7)
 ```
 
