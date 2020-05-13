@@ -16,7 +16,7 @@ source("../R_scripts/ownfunctions.R")
 ```
 
 # Load data (combined upper/lower river)
-```{r}
+```{r load-data}
 load("../data/outputs/sites_upperlower.Rda")
 load("../data/outputs/sites_ur.Rda")
 load("../data/outputs/sites_lr.Rda")
@@ -24,17 +24,233 @@ load("../data/outputs/sites_lr.Rda")
 
 # Data Cleaning
 ## Examine strata
-```{r}
+```{r table-strata}
 sites_upperlower <- sites_upperlower %>% droplevels()
 sites_upperlower %$% table(stratum)
 ```
 
 ## Check for NA's in snag or pool
-```{r}
+```{r check-nas}
 sites_upperlower %>% filter(is.na(snag) | is.na(pool)) # good!
 ```
 
-```{r}
-head(old_upperlower)
+## Compare to old data
+### Load old data
+```{r load-old}
+load("~/Downloads/all_reduced_clean.Rda")
+load("~/Downloads/all2_reduced_clean.Rda")
+
+# rename data
+old_upper <- all_reduced_clean
+old_lower <- all2_reduced_clean
+
+# created combined dataset (old data)
+old_upperlower <- bind_rows(old_upper, old_lower)
 ```
 
+```{r investigate-upper}
+nrow(sites_ur)
+nrow(old_upper)
+
+length(unique(sites_ur$barcode)) # there seems to be a unique barcode for each row
+length(unique(old_upper$barcode))
+```
+Okay, we have differences on both sides: sites appearing in the new data that didn't appear in the old, and sites appearing in the old data that don't appear in the new.
+
+Since the new data cleaning pipeline is pretty much as simple as I can get it, and given that there are many possible sources of error (pseudo-shoreline obs, and non-intersections with aquatic areas, to name two), I'm going to go with the data I have now and not investigate further.
+
+# Summaries
+## Overall
+```{r}
+summary_all <- sites_upperlower %>% dplyr::summarize(npoints = n(),
+                                              wood = sum(snag == 1),
+                                              nowood = sum(snag == 0),
+                                              propwood = wood/npoints)
+
+summary_all
+```
+
+## By pool
+```{r}
+# Summary
+summary_pool <- sites_upperlower %>% 
+  group_by(pool) %>%
+  dplyr::summarize(npoints = n(),
+            wood = sum(snag == 1),
+            nowood =  sum(snag == 0),
+            propwood = wood/npoints)
+
+# Test for significant differences
+chisq.test(summary_pool[,c("wood", "nowood")])
+
+# Post-hoc test with Bonferroni correction
+pairwise.prop.test(x = summary_pool$wood, n = summary_pool$npoints, 
+                   p.adjust.method = "bonferroni")
+
+unique(summary_pool$pool)
+```
+
+## By year and pool
+```{r}
+# Summary
+summary_yearpool <- sites_upperlower %>% group_by(pool, year) %>%
+  dplyr::summarize(npoints = n(),
+            wood = sum(snag == 1),
+            nowood =  sum(snag == 0),
+            propwood = wood/npoints) %>% ungroup()
+
+# Plot
+summary_yearpool %>% ggplot(aes(x = year, y = propwood, col = pool, group = pool))+
+  geom_line()+
+  theme_minimal()
+```
+
+## By stratum
+```{r}
+# Summary
+summary_stratum <- sites_upperlower %>% group_by(stratum) %>% 
+  dplyr::summarize(npoints = n(),
+            wood = sum(snag == 1),
+            nowood = sum(snag == 0),
+            propwood = wood/npoints)
+
+# Calculate confidence intervals for these proportions
+cis <- BinomCI(summary_stratum$wood, n = summary_stratum$npoints, conf.level = 0.95)
+summary_stratum <- cbind(summary_stratum, cis[,2:3])
+row.names(summary_stratum) <- NULL
+
+# Test for significant differences
+chisq.test(summary_stratum[,c("wood", "nowood")])
+
+# Post-hoc test with Bonferroni correction
+pairwise.prop.test(x = summary_pool$wood, n = summary_pool$npoints, 
+                   p.adjust.method = "bonferroni")
+
+# Plot of proportions and confidence intervals by stratum
+summary_stratum %>% ggplot(aes(x = stratum, y = propwood))+
+  geom_point(size = 3)+
+  geom_errorbar(aes(ymin = lwr.ci,
+                    ymax = upr.ci),
+                width = 0,
+                size = 1.2)+
+  theme_minimal()+
+  theme(text = element_text(size = 16))+
+  ylab("Proportion of points with wood")+
+  xlab("Habitat Stratum")+
+  ggtitle("Wood proportion by stratum")
+
+summary_stratum
+```
+
+## By stratum and pool
+```{r}
+# Summary
+summary_stratumpool <- sites_upperlower %>% group_by(pool, stratum) %>%
+  dplyr::summarize(npoints = n(),
+            wood = sum(snag == 1),
+            nowood = sum(snag == 0),
+            propwood = wood/npoints) %>% as.data.frame()
+summary_stratumpool
+
+# Test for significant differences
+chisq.test(summary_stratumpool[,c("wood", "nowood")])
+
+# Confidence intervals
+cis <- BinomCI(summary_stratumpool$wood, n = summary_stratumpool$npoints, conf.level = 0.95) %>% as.data.frame()
+summary_stratumpool <- summary_stratumpool %>% mutate(lwr.ci = cis$lwr.ci,
+                                                      upr.ci = cis$upr.ci)
+row.names(summary_stratumpool) <- NULL
+
+# Plot
+summary_stratumpool %>% ggplot(aes(x = stratum, y = propwood, color = pool))+
+  geom_point(size = 3,
+             position = position_dodge(width = 0.3))+
+  geom_errorbar(aes(ymin = lwr.ci, ymax = upr.ci),
+                width = 0, size = 1.2, position = position_dodge(width = 0.3))+
+  theme_minimal()+
+  theme(text = element_text(size = 16))+
+  ylab("Proportion of points with wood")+
+  xlab("Habitat Stratum")
+```
+
+## By pool, year, and stratum
+```{r}
+# Summary
+summary_poolyearstratum <- sites_upperlower %>% 
+  group_by(pool, year, stratum) %>% 
+  dplyr::summarize(npoints = n(),
+            wood = sum(snag == 1),
+            nowood = sum(snag == 0),
+            propwood = wood/npoints) %>%
+  as.data.frame()
+head(summary_poolyearstratum)   
+
+# Plot of proportions by stratum and pool
+summary_poolyearstratum %>% ggplot(aes(x = year, y = propwood, group = stratum))+
+  geom_line(aes(linetype = stratum))+
+  ylim(0,1)+
+  theme_minimal()+
+  xlab("Year")+
+  ylab("Proportion of points with wood")+
+  facet_wrap(~pool)
+
+# Plot of proportions by stratum and pool, only the two most common strata
+summary_poolyearstratum %>% filter(stratum %in% c("MCB-U", "SCB")) %>%
+  ggplot(aes(x = year, y = propwood, group = stratum))+
+  geom_line(size = .65, aes(linetype = stratum))+
+  theme_minimal()+
+  xlab("Year")+
+  ylab("Proportion of points with wood")+
+  facet_wrap(~pool)
+
+#Violin plots of annual variation by stratum and pool 
+# All observations, by stratum and pool
+summary_poolyearstratum %>% ggplot(aes(x = stratum, y = propwood))+
+  geom_violin()+
+  geom_boxplot(width = 0.1,
+               fill = "black",
+               outlier.color = NA)+
+  stat_summary(fun.y = median,
+               geom = "point",
+               fill = "white",
+               shape = 21,
+               size = 2.5)+
+  facet_wrap(~pool)
+
+# Pools, including those with > 9 observations
+summary_poolyearstratum %>% filter(npoints > 9) %>%
+  ggplot(aes(x = pool, y = propwood))+
+  geom_violin()+
+  geom_boxplot(width = 0.1,
+               fill = "black",
+               outlier.color = NA)+
+  stat_summary(fun.y = median,
+               geom = "point",
+               fill = "white",
+               shape = 21,
+               size = 2.5)
+
+# Stratum and pool, greater than 10 observations
+summary_poolyearstratum %>% filter(npoints > 9) %>%
+  ggplot(aes(x = stratum, y = propwood))+
+  geom_violin()+
+  geom_boxplot(width=0.1,
+               fill="black",
+               outlier.colour=NA)+
+  stat_summary(fun.y=median, 
+               geom="point",
+               fill="white",
+               shape=21,
+               size=2.5)+
+  facet_wrap(~pool)
+```
+
+### Save summaries
+```{r}
+save(summary_poolyearstratum, file = "../data/outputs/summary_poolyearstratum.Rda")
+save(summary_all, file = "../data/outputs/summary_all.Rda")
+save(summary_pool, file = "../data/outputs/summary_pool.Rda")
+save(summary_yearpool, file = "../data/outputs/summary_yearpool.Rda")
+save(summary_stratum, file = "../data/outputs/summary_stratum.Rda")
+save(summary_stratumpool, file = "../data/outputs/summary_stratumpool.Rda")
+```
