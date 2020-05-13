@@ -34,21 +34,21 @@ sites_upperlower %$% table(stratum)
 sites_upperlower %>% filter(is.na(snag) | is.na(pool)) # good!
 ```
 
-# Update strata
-## Exclude MCB-W and BWC-O
-```{r}
-sites_upperlower <- sites_upperlower %>% 
-  filter(!(stratum %in% c("MCB-W", "BWC-O"))) %>%
-  droplevels()
+<!-- # Update strata -->
+<!-- ## Exclude MCB-W and BWC-O -->
+<!-- ```{r} -->
+<!-- sites_upperlower <- sites_upperlower %>%  -->
+<!--   filter(!(stratum %in% c("MCB-W", "BWC-O"))) %>% -->
+<!--   droplevels() -->
 
-sites_upperlower <- sites_upperlower %>%
-  mutate(stratum = case_when(stratum == "BWC-S" ~ "BWC",
-                             stratum == "IMP-S" ~ "IMP",
-                             stratum == "MCB-U" ~ "MCB",
-                             TRUE ~ as.character(stratum)))
+<!-- sites_upperlower <- sites_upperlower %>% -->
+<!--   mutate(stratum = case_when(stratum == "BWC-S" ~ "BWC", -->
+<!--                              stratum == "IMP-S" ~ "IMP", -->
+<!--                              stratum == "MCB-U" ~ "MCB", -->
+<!--                              TRUE ~ as.character(stratum))) -->
 
-table(sites_upperlower$stratum, exclude = NULL)
-```
+<!-- table(sites_upperlower$stratum, exclude = NULL) -->
+<!-- ``` -->
 
 
 # Investigate numbers
@@ -84,16 +84,6 @@ table(old_upperlower$stratum, exclude = NULL) #these are the numbers we original
 
 # get stratum breakdown for current sites
 table(sites_upperlower$stratum, exclude = NULL)
-
-# Reassign pools
-old_upperlower <- old_upperlower %>%
-  mutate(pool = case_when(pool == "13" ~ "P13",
-                          pool == "26" ~ "P26",
-                          pool == "4" ~ "P04",
-                          pool == "8" ~ "P08",
-                          pool == "LG" ~ "LAG",
-                          pool == "OR" ~ "OR2",
-                          TRUE ~ pool))
 
 # comparing these two tables shows that there are discrepancies in almost every pool-by-stratum category. So the issue is not confined to a few. Thus probably a more general data quality issue, or having to do with a stratum- or pool-nonspecific factor. 
  
@@ -179,15 +169,16 @@ missing_from_old # looks like all these sites are NA for a bunch of environmenta
 
 # also went back into the old data cleaning code and saw that in fact, we did want to exclude the ones that are NA for a bunch of these environmental variables (didn't intersect the aquatic areas layer). I'll go back and do that now. 
 
+# excluded observations that were NA, aka didn't intersect with the aquatic areas.
+
 # After having done that, there are still a bunch that are missing from old but included in new. Have to figure out why this is.
+
+sites_upperlower %$% table(stratum) # we actually now have lower numbers than we did in the old data, which is good, given the exclusion of pseudo-shoreline sites. But then why is there still a discrepancy?
+
+missing_from_old %$% table(stratum, pool) # most of these are from BWC in LAG. Is it possible that we just had some more LAG observations added to the files or something?
 ```
 
-
-
-
-
-
-
+In any case, for now I'm going to go forward with the data as it is. Can address these concerns in the meeting.
 
 # Summaries
 ## Overall
@@ -267,6 +258,7 @@ summary_stratum %>% ggplot(aes(x = stratum, y = propwood))+
   xlab("Habitat Stratum")+
   ggtitle("Wood proportion by stratum")
 
+summary_stratum
 ```
 
 ## By stratum and pool
@@ -299,6 +291,7 @@ summary_stratumpool %>% ggplot(aes(x = stratum, y = propwood, color = pool))+
   ylab("Proportion of points with wood")+
   xlab("Habitat Stratum")
 
+nrow(ps_upperlower)
 ```
 
 ## By pool, year, and stratum
