@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Source libraries and functions
-```{r echo = F}
+```{r echo = F, message = F}
 source("../R_scripts/libraries.R")
 source("../R_scripts/ownfunctions.R")
 ```
