@@ -4,28 +4,30 @@
 # output: two .Rda files of cleaned data: 1) "all_reduced_clean.Rda" (p4,8,13) and 2) "all2_reduced_clean.Rda" (p26, ilr, or)
 
 ## Load functions and libraries
-source("Analysis/R_scripts/ownfunctions.R")
-source("Analysis/R_scripts/libraries.R")
+source(here("Analysis", "R_scripts", "ownfunctions.R"))
+source(here("Analysis", "R_scripts", "libraries.R"))
 
 ## Load data
-load("Analysis/data/fish_data_EF.Rda") # Fish sampling data
-sites_p4p8p13 <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/sites_p4p8p13.txt") # reprojected data
-rivmi <- read.table("Analysis/data/p4p8p13_rivmile.txt", sep = ",", header = T) # river mile data
-sites_aa_5m <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/sites_aquaareas5m.txt") # merged aquatic areas data for points buffered by 5 meters.
-sites_terrestrial <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/sites_terrestrial.txt") # nearest terrestrial area info for each point
-terrestrial_forests <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/Terrestrial_Forests.txt") # info about terrestrial areas/forests
-sites_forest <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/sites_forest.txt") # nearest forest info for each point
-lc_2010 <- read.csv("Analysis/data/DataSets_7_7/AttributeTables/lc_2010.txt") # 2010 landcover info
+load("Analysis/data/outputs/fish_data_EF.Rda") # Fish sampling data
+sites_p4p8p13 <- read.csv("Analysis/data/inputs/DataSets_7_7/AttributeTables/sites_p4p8p13.txt") # reprojected data
+rivmi <- read.table("Analysis/data/inputs/p4p8p13_rivmile.txt", sep = ",", header = T) # river mile data
+sites_aa_5m <- read.csv("Analysis/data/inputs/DataSets_7_7/AttributeTables/sites_aquaareas5m.txt") # merged aquatic areas data for points buffered by 5 meters.
+sites_terrestrial <- read.csv("Analysis/data/inputs/DataSets_7_7/AttributeTables/sites_terrestrial.txt") # nearest terrestrial area info for each point
+terrestrial_forests <- read.csv("Analysis/data/inputs/DataSets_7_7/AttributeTables/Terrestrial_Forests.txt") # info about terrestrial areas/forests
+sites_forest <- read.csv("Analysis/data/inputs/DataSets_7_7/AttributeTables/sites_forest.txt") # nearest forest info for each point
+lc_2010 <- read.csv("Analysis/data/inputs/DataSets_7_7/AttributeTables/lc_2010.txt") # 2010 landcover info
 
 ## Clean data
 ### sites_aa_5m is going to be the main dataset that we're working with. We need to add site barcodes, pools, and river miles.
 ### To add river mile data, we have to go via sites_p4p8p13.
 
 ### Join river miles to sites_p4p8p13.
+## sites_p4p8p13$FID is equivalent to rivmi$TARGET_FID, so let's rename them both to siteid.
 sites_p4p8p13 %<>% rename(siteid = FID)
 rivmi %<>% rename(siteid = TARGET_FID) 
-rivmi_reduced <- rivmi %>% select(siteid, RIVER_MILE)
-sites <- left_join(sites_p4p8p13, rivmi_reduced, by = "siteid")
+
+rivmi_reduced <- rivmi %>% dplyr::select(siteid, RIVER_MILE) #select only the specific columns we want in rivmi
+sites <- left_join(sites_p4p8p13, rivmi_reduced, by = "siteid") # join by siteid
 
 ### Join barcodes to sites_p4p8p13. This will allow for a join with sites_aa_5m.
 sites %<>% rename(fishdata_rownum = Field1) # the Field1 column in this dataset corresponds to the row number in fish_data_EF.
