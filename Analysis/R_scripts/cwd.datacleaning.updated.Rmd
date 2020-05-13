@@ -20,19 +20,15 @@ source("libraries.R")
 ## Load data
 ```{r}
 load("../data/outputs/fish_data_EF.Rda") 
+head(fish_data_EF)
   # Fish sampling data
 fish_data_EF <- fish_data_EF %>% mutate(fishdata_rownum = 1:nrow(fish_data_EF)) #number the rows
-
 sites_p4p8p13 <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_p4p8p13.txt") 
   # reprojected data
-
 rivmi <- read.table("../data/inputs/p4p8p13_rivmile.txt", sep = ",", header = T) 
   # river mile data
-
 sites_aa_5m <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_aquaareas5m.txt") 
   # merged aquatic areas data for points buffered by 5 meters.
-
-
 ## Environmental data
 sites_terrestrial <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_terrestrial.txt") 
   # nearest terrestrial area info for each point
@@ -59,13 +55,9 @@ sites_ur <- rivmi %>% dplyr::select(TARGET_FID, Field1, stratum, lcode, sdate, u
 ## Join fish data
 ```{r}
 sites_ur <- sites_ur %>% rename(fishdata_rownum = Field1) # The Field1 column in this dataset corresponds to the row number in fish_data_EF.
-
 fish_data_EF_tojoin <- fish_data_EF %>% dplyr::select(sitetype, gear, wingdyke, riprap, trib, barcode, summary, fishdata_rownum, zone15e, zone15n, utmzone)
-
 sites_ur <- left_join(sites_ur, fish_data_EF_tojoin, by = "fishdata_rownum")
-
 # Note that after this join, we now have the "barcode" column in our data. This will allow us to join other data by barcode.
-
 sites_ur %$% table(utmzone)
 ```
 
@@ -74,13 +66,10 @@ sites_ur %$% table(utmzone)
 # Make unique column for joining in each
 sites_aa_5m <- sites_aa_5m %>% mutate(joiner = paste(stratum, lcode, sdate, utm_e, utm_n, snag))
 sites_ur <- sites_ur %>% mutate(joiner = paste(stratum, lcode, sdate, utm_e, utm_n, snag))
-
 # These appear to be exactly the same. Check:
 sum(sites_aa_5m$joiner != sites_ur$joiner) #yep, they are the same! That makes it easy:
-
 sites_ur <- sites_ur %>% dplyr::select(-c(joiner, TARGET_FID)) # remove the joiner column and also TARGET_FID; we don't need that anymore.
 sites_aa_5m <- sites_aa_5m %>% dplyr::select(-c(joiner, TARGET_FID)) 
-
 # Join the aa information to sites_ur.
 sites_ur <- left_join(sites_ur, sites_aa_5m, by = c("stratum", "lcode", "sdate", "utm_e", "utm_n", "snag"))
 ```
@@ -88,7 +77,6 @@ sites_ur <- left_join(sites_ur, sites_aa_5m, by = c("stratum", "lcode", "sdate",
 ## Clean aquatic areas
 ```{r}
 # "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". 
-
 # remove sites that are NA for Perimeter, Area, and avg_fetch (i.e. don't intersect the aquatic areas layer)
 sites_ur <- sites_ur %>%
   filter(!(Perimeter == 0 & Area == 0 & avg_fetch == 0))
@@ -106,22 +94,17 @@ addpools <- function(df){
 }
 sites_ur <- addpools(sites_ur)
 locate.nas(sites_ur) # we still have some NA's for "snag", but that is to be expected. There are also some NA's for `pool`, but those have NA for snag and have some sketchy-looking barcodes.
-
 # More NA pools fixing
 sum(is.na(sites_ur$pool)) # we still have a bunch of NA's for pool
-
 # Make a plot to see what's going on
 sites_ur %>% ggplot(aes(x = utm_e, y = utm_n))+
   geom_point(aes(col = pool)) # This shows some pretty clear divisions between pools along the river. The NA's are evenly mixed in with the other points.
-
 # Assign the NA pools based on lat/lon
 napools <- sites_ur %>% filter(is.na(pool))
 napools <- napools %>% mutate(pool = case_when(utm_n > 4900000 ~ "P04",
                                                utm_n > 4800000 & utm_n < 4900000 ~ "P08",
                                                utm_n < 4700000 ~ "P13"))
-
 sites_ur$pool[is.na(sites_ur$pool)] <- napools$pool
-
 # Double check with a plot
 sites_ur %>% ggplot(aes(x = utm_e, y = utm_n))+
   geom_point(aes(col = pool)) # Looks good!
@@ -169,7 +152,6 @@ sites_ur <- sites_ur %>% mutate(year = str_extract(sdate, "[[:digit:]]{4}"))
 ### Select variables
 ```{r}
 toinclude <- c("fishdata_rownum", "stratum", "lcode", "sdate", "utm_e", "utm_n", "snag", "RIVER_MILE", "wingdyke", "riprap", "barcode", "summary", "zone15e", "zone15n", "utmzone", "uniq_id", "pool", "Perimeter", "max_depth", "avg_depth", "tot_vol", "sdi", "pct_terr", "pct1wetf", "year")
-
 sites_ur <- sites_ur %>% dplyr::select(all_of(toinclude)) # choose which columns to include
 names(sites_ur)
 ```
@@ -186,7 +168,6 @@ sites_ur <- sites_ur %>% rename(perimeter = Perimeter,
 ### Replace -999 etc. with NA
 ```{r}
 factors <- sites_ur %>% dplyr::select_if(., is.factor) %>% names()
-
 colstomodify <- sites_ur %>% dplyr::select(-all_of(factors)) %>% dplyr::select(-barcode) %>% names()
                
 for(i in colstomodify){
@@ -240,25 +221,17 @@ locate.nas(sites_ur)
 # Load files
 load("../data/inputs/DataSets_8_17/ltrm_fish_data_new.Rda") 
 # Fish sampling data - made by MVA 10/31/18 by importing csv "ltrm_fish_data.csv" and exporting as Rda. 11/26/19: KJGG could not find this file. Re-imported ltrm_fish_data.csv and saved as .Rda.
-
 #ltrm_fish_data <- read.csv("data/DataSets_8_17/ltrm_fish_data.csv",sep=",",header=TRUE)
  #save(ltrm_fish_data,file="data/DataSets_8_17/ltrm_fish_data_new.Rda")
 ltrm_fish_data <- ltrm_fish_data_new # This is the equivalent of fish_data_EF for the upper river.
 ltrm_fish_data <- ltrm_fish_data %>% mutate(fishdata_rownum = 1:nrow(ltrm_fish_data)) #number the rows
-
 sites_p26ilror <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_p26ilror.txt") # reprojected data. This is the equivalent of sites_p4p8p13
-
 # I can't find an equivalent of the river miles file for the lower river. Do we have?
-
 sites_aa_5m <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_aquaareas5m2.txt") # merged aquatic areas data for points buffered by 5 meters.
-
 ## Environmental data
 sites_terrestrial <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_terrestrial2.txt") # nearest terrestrial area info for each point
-
 terrestrial_forests <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/Terrestrial_Forests2.txt") # info about terrestrial areas/forests
-
 sites_forest <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_forest2.txt") # nearest forest info for each point
-
 lc_2010 <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/lc_20102.txt") # landcover info
 ```
 
@@ -277,9 +250,7 @@ sites_lr <- sites_p26ilror
 ## Join fish data
 ```{r}
 sites_lr <- sites_lr %>% rename(fishdata_rownum = RowID_) # The RowID_ column in this dataset corresponds to the row number in ltrm_fish_data, I think. I'm inferring this from parallels to the upper river data.
-
 ltrm_fish_data_tojoin <- ltrm_fish_data %>% dplyr::select(sitetype, gear, wingdyke, riprap, trib, barcode, summary, fishdata_rownum, zone15e, zone15n, utmzone)
-
 sites_lr <- left_join(sites_lr, ltrm_fish_data_tojoin, by = "fishdata_rownum")
 # Note that after this join, we now have the "barcode" column in our data. This will allow us to join other data by barcode.
 ```
@@ -289,14 +260,11 @@ sites_lr <- left_join(sites_lr, ltrm_fish_data_tojoin, by = "fishdata_rownum")
 # Make unique column for joining in each
 sites_aa_5m <- sites_aa_5m %>% mutate(joiner = paste(stratum, lcode, sdate, utm_e, utm_n, snag))
 sites_lr <- sites_lr %>% mutate(joiner = paste(stratum, lcode, sdate, utm_e, utm_n, snag))
-
 # These appear to be exactly the same. Check:
 sum(sites_aa_5m$joiner != sites_lr$joiner) #yep, they are the same! That makes it easy:
 nrow(sites_aa_5m) == nrow(sites_lr) #TRUE
-
 sites_lr <- sites_lr %>% dplyr::select(-c(joiner, FID)) # remove the joiner column and also FID; we don't need that anymore.
 sites_aa_5m <- sites_aa_5m %>% dplyr::select(-c(joiner, FID))
-
 # Join the aa information to sites_lr.
 sites_lr <- left_join(sites_lr, sites_aa_5m, by = c("stratum", "lcode", "sdate", "utm_e", "utm_n", "snag"))
 ```
@@ -304,7 +272,6 @@ sites_lr <- left_join(sites_lr, sites_aa_5m, by = c("stratum", "lcode", "sdate",
 ## Clean aquatic areas
 ```{r}
 # "Observations with value of 0 in all the columns from aqa_2010_lvl3_011918.shp do not intersect with the aquatic areas layer". 
-
 sites_lr <- sites_lr %>% # remove observations that are missing values for several environmental vars
   filter(!(Perimeter == 0 & Area == 0 & avg_fetch == 0))
 ```
@@ -314,7 +281,6 @@ sites_lr <- sites_lr %>% # remove observations that are missing values for sever
 # Fix missing pools using addpools function defined for ur above.
 sites_lr <- addpools(sites_lr)
 locate.nas(sites_lr) # Fewer NA's for `snag` than for the upper river data set, but there are many NA's for the environmental data. I wonder if these are problematic?
-
 # More NA pools fixing
 sum(is.na(sites_lr$pool)) # we still have a bunch of NA's for pool
 ```
@@ -324,10 +290,8 @@ sum(is.na(sites_lr$pool)) # we still have a bunch of NA's for pool
 # Make a plot to see what's going on
 sites_lr %>% ggplot(aes(x = utm_e, y = utm_n))+
   geom_point(aes(col = pool)) # There are some very weird things going on with the UTM coordinates here.
-
 # Investigate the weird utm coordinates
 sites_lr %$% table(utmzone) # indeed, these are listed as being in zone 16. 
-
 # But if we plot the zone 15 coords, it seems to be fine? (except for a few points)
 sites_lr %>% ggplot(aes(x = zone15e, y = zone15n))+
   geom_point(aes(col = pool))
@@ -374,7 +338,6 @@ sites_lr <- sites_lr %>% mutate(year = str_extract(sdate, "[[:digit:]]{4}"))
 ### Select variables
 ```{r}
 toinclude <- c("fishdata_rownum", "stratum", "lcode", "sdate", "utm_e", "utm_n", "snag", "wingdyke", "riprap", "barcode", "summary", "zone15e", "zone15n", "utmzone", "OBJECTID_1", "RowID_", "uniq_id", "pool", "Perimeter", "max_depth", "avg_depth", "tot_vol", "sdi", "pct_terr", "pct1wetf", "year")
-
 sites_lr <- sites_lr %>% dplyr::select(all_of(toinclude)) # choose which columns to include
 names(sites_lr)
 ```
@@ -390,7 +353,6 @@ sites_lr <- sites_lr %>% rename(perimeter = Perimeter,
 ### Replace -999 etc. with NA
 ```{r}
 factors <- sites_lr %>% dplyr::select_if(., is.factor) %>% names()
-
 colstomodify <- sites_lr %>% dplyr::select(-factors) %>% names()
                
 for(i in colstomodify){
@@ -454,7 +416,6 @@ names(sites_lr) %in% names(sites_ur)
 names(sites_ur) %in% names(sites_lr)
 names(sites_ur) == names(sites_lr)
 # Now they have the same names but in a different order
-
 sites_lr <- sites_lr[,names(sites_ur)] # align names
 ```
 
@@ -469,7 +430,6 @@ sites_ur <- sites_ur %>% mutate(upperlower = "upper")
 sites_lr <- sites_lr %>% 
   filter(!(pool %in% c("ALT", "OR1"))) %>%
   droplevels()
-
 sites_ur <- sites_ur %>% 
   filter(!(pool %in% c("ALT", "OR1"))) %>%
   droplevels()
@@ -480,16 +440,13 @@ sites_ur <- sites_ur %>%
 ```{r}
 sites_ur <- sites_ur %>%
   dplyr::select(-c("utm_e", "utm_n"))
-
 # visualize zone
 sites_ur %>%
   ggplot(aes(x = zone15e, y = zone15n, col = stratum))+
   geom_point()
-
 # Remove bad points
 sites_ur <- sites_ur %>%
   filter(zone15n > 2000000)
-
 # visualize
 sites_ur %>%
   ggplot(aes(x = zone15e, y = zone15n, col = stratum))+
@@ -499,16 +456,13 @@ sites_ur %>%
 ```{r}
 sites_lr <- sites_lr %>%
   dplyr::select(-c("utm_e", "utm_n"))
-
 # visualize zone
 sites_lr %>%
   ggplot(aes(x = zone15e, y = zone15n, col = stratum))+
   geom_point()
-
 # Remove bad points
 sites_lr <- sites_lr %>%
   filter(zone15e > 600000 & zone15e < 900000)
-
 # visualize
 sites_lr %>%
   ggplot(aes(x = zone15e, y = zone15n, col = stratum))+
@@ -518,7 +472,6 @@ sites_lr %>%
 ## Perform join
 ```{r}
 sites_upperlower <- rbind(sites_lr, sites_ur)
-
 sites_upperlower %>% filter(!(stratum %in% c("MCB-W", "BWC-O"))) %>%
   filter(!is.na(snag)) %>%
   locate.nas()
@@ -529,21 +482,17 @@ Why do we still have some pool NA's?
 ```{r}
 napools <- sites_upperlower %>% filter(is.na(pool))
 head(napools)
-
 table(napools$upperlower, exclude = FALSE)
 # all the NA pools are in the lower river, for some reason.
 table(napools$stratum)
-
 # make a map of the NA points
 napools %>%
   ggplot(aes(x = zone15e, y = zone15n))+
   geom_point()
-
 # map of the lower river for comparison
 sites_lr %>% filter(!is.na(pool)) %>%
   ggplot(aes(x = zone15e, y = zone15n, col = pool))+
   geom_point()
-
 # Assign pools based on zone15n
 sites_upperlower <- sites_upperlower %>%
   mutate(fixedpool = case_when(is.na(pool) ~ TRUE,
@@ -566,10 +515,8 @@ save(ps_upperlower, file = "../data/outputs/ps_upperlower.Rda")
 save(sites_upperlower, file = "../data/outputs/sites_upperlower.Rda")
 save(sites_ur, file = "../data/outputs/sites_ur.Rda")
 save(sites_lr, file = "../data/outputs/sites_lr.Rda")
-
 # As CSV's
 write.csv(sites_upperlower, "../data/outputs/sites_upperlower.csv", row.names = F)
 write.csv(sites_ur, "../data/outputs/sites_ur.csv", row.names = F)
 write.csv(sites_lr, "../data/outputs/sites_lr.csv", row.names = F)
 ```
-
