@@ -1,0 +1,302 @@
+---
+title: "data_cleaning_3"
+author: "Kaija Gahm"
+date: "5/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Load functions and libraries
+```{r results = "hide", message = FALSE}
+source("../R_scripts/ownfunctions.R")
+source("../R_scripts/libraries.R")
+```
+
+#Upper river
+## Load data
+```{r load-data-upper}
+# reprojected data
+upper <- read.table("../data/inputs/DataSets_7_7_upper/AttributeTables/sites_p4p8p13.txt", sep = ",", stringsAsFactors = FALSE)
+names(upper) <- as.character(upper[1,]) # set appropriate col names
+upper <- upper[-1,]
+
+# fish data
+#ltrm_fish_data_upper <- read.csv("../data/inputs/DataSets_7_7_upper/ltrm_fish_data_EF.csv", as.is = TRUE, stringsAsFactors = FALSE)
+#save(ltrm_fish_data_upper, file = "../data/outputs/ltrm_fish_data_upper.Rda") # save as Rda so it loads quicker
+load("../data/outputs/ltrm_fish_data_upper.Rda") # load Rda
+```
+
+## Prepare data
+```{r row-id-upper}
+# Add a row id column to the fish data. We know that the row number of ltrm_fish_data is equivalent to RowID in ltrm_fish_sites, and to Field1 in sites_p4p8p13 (aka upper). Since ltrm_fish_sites isn't coming into play here, let's just add a column called Field1 in ltrm_fish_data.
+
+ltrm_fish_data_upper <- ltrm_fish_data_upper %>%
+  mutate(Field1 = as.character(1:nrow(ltrm_fish_data_upper)))
+```
+
+```{r select-cols-upper}
+# Select cols from the fish data to join to the reprojected upper river sites data
+fish_tojoin <- ltrm_fish_data_upper %>%
+  dplyr::select(barcode, sitetype, pool, gear, summary, utmzone, zone15e, zone15n, wingdyke, trib, riprap, Field1)
+
+# Remove FID
+upper <- upper %>%
+  dplyr::select(-FID)
+```
+
+## Join
+```{r join-upper}
+# Join upper to fish_tojoin by Field1
+upper <- upper %>%
+  left_join(fish_tojoin, by = "Field1")
+names(upper)
+
+# check for NA's
+locate.nas(ltrm_fish_data_upper)
+locate.nas(fish_tojoin)
+locate.nas(upper) # the question remains: why are there NA's for snag?
+```
+
+## Clean
+```{r fix-coords-upper}
+upper <- upper %>%
+  filter(zone15n > 1e+06) # remove one point that's waaaaaay too far south: likely an error.
+```
+
+```{r fix-pools-upper}
+# visualize the pools
+upper %>% ggplot(aes(x = zone15e, y = zone15n))+
+  geom_point(aes(col = factor(pool)))
+
+upper <- upper %>%
+  mutate(pool = case_when(!is.na(pool) ~ as.character(pool),
+                          is.na(pool) & zone15n > 4900000 ~ "4",
+                          is.na(pool) & zone15n < 4900000 & zone15n > 4800000 ~ "8",
+                          is.na(pool) & zone15n < 4800000 ~ "13"))
+table(upper$pool, exclude = NULL)
+```
+
+```{r fix-dates-upper}
+# Put the dates into the right format
+upper <- upper %>%
+  mutate(sdate = mdy_hms(sdate))
+
+# Add a year column
+upper <- upper %>%
+  mutate(year = year(sdate))
+```
+
+```{r na-snag-upper}
+# Filter out NA's for snag
+upper <- upper %>%
+  filter(!is.na(snag))
+```
+
+```{r stratum-upper}
+# examine the strata present
+#table(upper$stratum)
+
+# Exclude UXO and TWZ
+upper <- upper %>%
+  filter(!(stratum %in% c("TWZ", "UXO")))
+
+# Recode strata
+upper <- upper %>%
+  mutate(stratum = fct_recode(stratum, BWC = "BWC-O", BWC = "BWC-S", IMP = "IMP-S", IMP = "IMP-O", MCB = "MCB-U", MCB = "MCB-W", SCB = "SCB"))
+```
+
+```{r sitetype-upper}
+# We want only sitetype = 0 or 1, not 2. 
+upper <- upper %>%
+  filter(sitetype %in% c(0, 1))
+```
+
+```{r gear-upper}
+# We want only D = daytime electrofishing
+upper <- upper %>%
+  filter(gear == "D")
+```
+
+```{r pseudo-shoreline-upper}
+# Remove pseudo-shoreline observations
+upper <- upper %>%
+  filter(summary != 7)
+```
+
+```{r id-col-upper}
+# Add ID column for upper river
+upper <- upper %>%
+  mutate(upperlower = "upper")
+```
+
+## Check
+```{r check-nas-upper}
+locate.nas(upper)
+#looks good!
+```
+
+***
+# Lower River
+## Load data
+```{r load-data-lower}
+# reprojected data
+lower <- read.table("../data/inputs/DataSets_8_17_lower/AttributeTables/sites_p26ilror.txt", sep = ",", stringsAsFactors = FALSE)
+names(lower) <- as.character(lower[1,]) # set appropriate col names
+lower <- lower[-1,]
+
+# fish data
+#ltrm_fish_data_lower <- read.csv("../data/inputs/DataSets_8_17_lower/ltrm_fish_data.csv", as.is = TRUE, stringsAsFactors = FALSE)
+#save(ltrm_fish_data_lower, file = "../data/outputs/ltrm_fish_data_lower.Rda") # save as Rda so it loads quicker
+load("../data/outputs/ltrm_fish_data_lower.Rda") # load Rda
+```
+
+## Prepare data
+```{r row-id-lower}
+# Add a row id column to the fish data. We know that the row number of ltrm_fish_data is equivalent to RowID in ltrm_fish_sites, and to RowID_ in sites_p26ilror (aka lower). Since ltrm_fish_sites isn't coming into play here, let's just add a column called Field1 in ltrm_fish_data and change RowID_ in lower to Field1 as well
+
+ltrm_fish_data_lower <- ltrm_fish_data_lower %>%
+  mutate(Field1 = as.character(1:nrow(ltrm_fish_data_lower)))
+
+lower <- lower %>%
+  rename(Field1 = RowID_)
+```
+
+```{r select-cols-lower}
+# Select cols from the fish data to join to the reprojected lower river sites data
+fish_tojoin <- ltrm_fish_data_lower %>%
+  dplyr::select(barcode, sitetype, pool, gear, summary, utmzone, zone15e, zone15n, wingdyke, trib, riprap, Field1)
+
+# Remove FID
+lower <- lower %>%
+  dplyr::select(-FID)
+```
+
+## Join
+```{r join-lower}
+# Join lower to fish_tojoin by Field1
+lower <- lower %>%
+  left_join(fish_tojoin, by = "Field1")
+names(lower)
+
+# check for NA's
+locate.nas(ltrm_fish_data_lower)
+locate.nas(fish_tojoin)
+locate.nas(lower) # the question remains: why are there NA's for snag?
+```
+
+## Clean
+```{r fix-coords-lower}
+# plot of sites
+lower %>%
+  ggplot(aes(x = zone15e, y = zone15n, col = factor(pool)))+
+  geom_point()
+
+# looks like we have a few problems.
+lower <- lower %>%
+  filter(zone15e > 6e+05 & zone15e < 9e+05)
+
+lower %>%
+  ggplot(aes(x = zone15e, y = zone15n, col = factor(pool)))+
+  geom_point()
+
+# Isolate the problem point
+problem_point <- lower %>%
+  filter(zone15n < 4200000 & zone15e < 760000)
+
+# Remove the problem point by its Field1 ID
+lower <- lower %>%
+  filter(!(Field1 %in% problem_point$Field1))
+```
+
+```{r fix-pools-lower}
+# visualize the pools
+lower %>% ggplot(aes(x = zone15e, y = zone15n))+
+  geom_point(aes(col = factor(pool)))
+
+# looks like we don't have any NA pools to fix.
+```
+
+```{r fix-dates-lower}
+# Put the dates into the right format
+lower <- lower %>%
+  mutate(sdate = mdy_hms(sdate))
+
+# Add a year column
+lower <- lower %>%
+  mutate(year = year(sdate))
+```
+
+```{r na-snag-lower}
+# Filter out NA's for snag
+lower <- lower %>%
+  filter(!is.na(snag))
+```
+
+```{r stratum-lower}
+# examine the strata present
+table(lower$stratum)
+
+# Exclude TRI and TWZ
+lower <- lower %>%
+  filter(!(stratum %in% c("TWZ", "TRI")))
+
+# Recode strata
+lower <- lower %>%
+  mutate(stratum = fct_recode(stratum, BWC = "BWC-S", IMP = "IMP-S", MCB = "MCB-U", MCB = "MCB-W", SCB = "SCB"))
+```
+
+```{r sitetype-lower}
+# We want only sitetype = 0 or 1, not 2. 
+lower <- lower %>%
+  filter(sitetype %in% c(0, 1))
+```
+
+```{r gear-lower}
+# We want only D = daytime electrofishing
+lower <- lower %>%
+  filter(gear == "D")
+```
+
+```{r pseudo-shoreline-lower}
+# Remove pseudo-shoreline observations
+lower <- lower %>%
+  filter(summary != 7)
+```
+
+```{r id-col-lower}
+# Add ID column for lower river
+lower <- lower %>%
+  mutate(upperlower = "lower")
+```
+
+## Check
+```{r check-nas-lower}
+locate.nas(lower)
+#looks good!
+```
+
+***
+# Join upper and lower river
+```{r join-ul}
+# Check that colnames are the same
+names(upper) %in% names(lower)
+names(upper) == names(lower)
+
+# Join
+sites_upperlower <- bind_rows(upper, lower)
+```
+
+```{r save-ul}
+# rename upper and lower
+sites_ur <- upper
+sites_lr <- lower
+
+# Save all
+save(sites_upperlower, file = "../data/outputs/sites_upperlower.Rda")
+save(sites_ur, file = "../data/outputs/sites_ur.Rda")
+save(sites_lr, file = "../data/outputs/sites_lr.Rda")
+```
+
