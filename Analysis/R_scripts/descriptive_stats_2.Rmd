@@ -1,0 +1,40 @@
+---
+title: "descriptive_stats_2"
+author: "Kaija Gahm"
+date: "5/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Source libraries and functions
+```{r echo = F}
+source("../R_scripts/libraries.R")
+source("../R_scripts/ownfunctions.R")
+```
+
+# Load data (combined upper/lower river)
+```{r}
+load("../data/outputs/sites_upperlower.Rda")
+load("../data/outputs/sites_ur.Rda")
+load("../data/outputs/sites_lr.Rda")
+```
+
+# Data Cleaning
+## Examine strata
+```{r}
+sites_upperlower <- sites_upperlower %>% droplevels()
+sites_upperlower %$% table(stratum)
+```
+
+## Check for NA's in snag or pool
+```{r}
+sites_upperlower %>% filter(is.na(snag) | is.na(pool)) # good!
+```
+
+```{r}
+head(old_upperlower)
+```
+
