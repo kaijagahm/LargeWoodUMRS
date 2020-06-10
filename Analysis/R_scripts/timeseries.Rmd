@@ -45,25 +45,109 @@ head(summary_yearpool)
 summary_yearpool <- summary_yearpool %>% mutate(year = as.numeric(year))
 
 stats <- summary_yearpool %>% group_by(pool) %>% summarize(changepoint = pettitt.test(propwood)$estimate[1],
+                                                           changepoint2 = pettitt.test(propwood)$estimate[2],
                                                            u_stat = pettitt.test(propwood)$statistic,
                                                            pt_pval = round(pettitt.test(propwood)$p.value, 3),
                                                            changeyear = year[changepoint] + 0.5,
+                                                           changeyear2 = year[changepoint2] + 0.5,
                                                            mk_z = round(mk.test(propwood)$statistic, 3),
                                                            mk_pval = round(mk.test(propwood)$p.value, 3),
                                                            begyear = min(year),
                                                            endyear = max(year),
                                                            mn1 = round(mean(propwood[1:changepoint]), 3),
-                                                           mn2 = round(mean(propwood[(changepoint + 1):n()]), 3))
+                                                           mn2 = round(mean(propwood[(changepoint + 1):n()]), 3),
+                                                           mn_overall = round(mean(propwood), 3),
+                                                           slope_coef = coef(lm(propwood ~ year))[2],
+                                                           intercept_coef = coef(lm(propwood ~ year))[1])
 stats
 
 # this table shows results of the pettitt test and the mk test for the _overall_ dataset. It does not yet include trend analyses for subsections if a breakpoint was found.
 
-# Note: if there was more than one changepoint, I've taken the first.
-# FIX THIS LATER!
+# I have added columns for multiple changepoints. Need to add stats for trend analyses for subsections. 
+```
+
+### Add regression coefficients to stats
+```{r}
+stats <- stats
+i <- 1
+# Set stats vals to NA if not significant
+for(i in 1:nrow(stats)){
+  # pre- and post-changepoint regressions
+  ## pre
+  subdat_1 <- summary_yearpool %>% 
+    filter(pool == stats$pool[i]) %>%  # select current pool
+    filter(year >= stats$begyear[i] & year <= stats$changeyear[i]) # select years before the changepoint
+  stats$slope_1[i] <- coef(lm(propwood ~ year, data = subdat_1))[2] # slope for pre-changepoint regression
+  stats$intercept_1[i] <- coef(lm(propwood ~ year, data = subdat_1))[1] # intercept for pre-changepoint regression
+  stats$mkp1[i] <- round(mk.test(subdat_1$propwood)$p.value, 3)
+  
+  ## post
+  subdat_2 <- summary_yearpool %>% 
+    filter(pool == stats$pool[i]) %>%  # select current pool
+    filter(year >= stats$changeyear[i] & year <= stats$endyear[i]) # select years after the changepoint
+  stats$slope_2[i] <- coef(lm(propwood ~ year, data = subdat_2))[2] # slope for post-changepoint regression
+  stats$intercept_2[i] <- coef(lm(propwood ~ year, data = subdat_2))[1] # intercept for post-changepoint regression
+  stats$mkp1[i] <- round(mk.test(subdat_1$propwood)$p.value, 3)
+  stats$mkp2[i] <- round(mk.test(subdat_2$propwood)$p.value, 3)
+  
+  if(stats$pt_pval[i] >= 0.05){ # if the changepoint is non-significant...
+    stats[i,c(2:4, 6:7, 12:13)] <- NA # set the changepoints, changeyears, and means to NA. 
+  }else{
+    stats[i, "mn_overall"] <- NA # if the p val is significant, set the overall mean to NA.
+  }
+  if(stats$mk_pval[i] >= 0.05){ # if the mk test is non-significant...
+    stats[i, c("slope_coef", "intercept_coef")] <- NA
+  }
+  if(stats$mkp1[i] >= 0.05){
+    stats[i, c("slope_1", "intercept_1")] <- NA
+  }
+  if(stats$mkp2[i] >= 0.05){
+    stats[i, c("slope_2", "intercept_2")] <- NA
+  } 
+}
+
+stats <- stats %>%
+  mutate(ybeg_1 = slope_1*begyear + intercept_1,
+         yend_1 = slope_1*changeyear + intercept_1,
+         ybeg_2 = slope_2*changeyear + intercept_2,
+         yend_2 = slope_2*endyear + intercept_2)
+
+head(stats)
 ```
 
 
-### Make plots
+# Make plots (facetted)
+```{r, warning = FALSE}
+summary_yearpool %>%
+  ggplot(aes(x = year, y = propwood))+
+  geom_point()+
+  facet_wrap(~pool)+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        text = element_text(size = 18))+
+  ylab("Proportion of sites with large wood")+
+  xlab("Year")+
+  geom_vline(data = stats, aes(xintercept = changeyear), col = "red", lty = 2)+
+  #geom_vline(data = stats, aes(xintercept = changeyear2), col = "red", lty = 2)+
+  geom_abline(data = stats, aes(slope = slope_coef, intercept = intercept_coef),
+              col = "black", lwd = 0.5)+ #overall regression
+  geom_segment(data = stats, aes(x = begyear, y = mn1, xend = changeyear, yend = mn1), 
+               col = "darkgrey", lty = 2)+ # mean 1
+  geom_segment(data = stats, aes(x = changeyear, y = mn2, xend = endyear, yend = mn2),
+               col = "darkgrey", lty = 2)+ # mean 2
+  geom_segment(data = stats, aes(x = begyear, y = mn_overall, xend = endyear, yend = mn_overall),
+               col = "darkgrey", lty = 2)+ # overall mean
+  geom_segment(data = stats, aes(x = begyear, y = ybeg_1, xend = changeyear, yend = yend_1),
+               col = "black", lwd = 1.5)+ # regression 1
+  geom_segment(data = stats, aes(x = changeyear, y = ybeg_2, xend = endyear, yend = yend_2),
+               col = "black", lwd = 1.5) # regression 2
+```
+
+
+
+
+
+### Make plots (cowplot)
 ```{r}
 ## FUNCTION TO CONSTRUCT GGPLOT for a given dataset
 plotfun <- function(pooldata, stats){ 
@@ -96,6 +180,9 @@ plotfun <- function(pooldata, stats){
     {if(current_stats$pt_pval < 0.05)geom_vline(xintercept = current_stats$changeyear,
                                                 col = "red",
                                                 lty = 2)}+ # add red line for breakpoint
+    {if(current_stats$pt_pval < 0.05)geom_vline(xintercept = current_stats$changeyear2,
+                                                col = "red",
+                                                lty = 2)}+
     {if(current_stats$pt_pval < 0.05)geom_segment(aes(x = current_stats$begyear,
                                                       y = current_stats$mn1,
                                                       xend = current_stats$changeyear - 0.5,
@@ -131,7 +218,8 @@ plotfun <- function(pooldata, stats){
                                 col = "black")}+
     geom_point(size = 0.75)+
     theme(axis.title.x = element_blank(),
-          axis.title.y = element_blank())
+          axis.title.y = element_blank())+
+    theme_minimal()
     return(p)
 }
 
@@ -146,7 +234,8 @@ for(i in 1:length(pools)){ # loop through the pools to make plots
 }
 
 pools <- cowplot::plot_grid(plotlist = pool_plots)
-ggsave(pools, filename = "../data/outputs/pools_plots.png", width = 11, height = 6)
+pools
+#ggsave(pools, filename = "../data/outputs/pools_plots.png", width = 11, height = 6)
 ```
 
 ## By aquatic areas
@@ -160,9 +249,11 @@ stats_stratum <- summary_poolyearstratum %>%
   group_by(pool, stratum) %>%
   filter(n() >= 3) %>%
   summarize(changepoint = pettitt.test(propwood)$estimate[1], # first changepoint if more than one
+            changepoint2 = pettitt.test(propwood)$estimate[2],
             u_stat = pettitt.test(propwood)$statistic[1],
             pt_pval = round(pettitt.test(propwood)$p.value[1], 3),
             changeyear = year[changepoint] + 0.5,
+            changeyear2 = year[changepoint2] + 0.5,
             mk_z = round(mk.test(propwood)$statistic, 3),
             mk_pval = round(mk.test(propwood)$p.value, 3),
             begyear = min(year),
