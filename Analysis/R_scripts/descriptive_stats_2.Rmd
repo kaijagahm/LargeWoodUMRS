@@ -26,7 +26,7 @@ load("../data/outputs/sites_lr.Rda")
 ## Examine strata
 ```{r table-strata}
 sites_upperlower <- sites_upperlower %>% droplevels()
-sites_upperlower %$% table(stratum)
+nrow(sites_upperlower)
 ```
 
 ## Check for NA's in snag or pool
@@ -84,6 +84,9 @@ summary_pool <- sites_upperlower %>%
 chisq.test(summary_pool[,c("wood", "nowood")])
 
 # Post-hoc test with Bonferroni correction
+summary_pool <- summary_pool %>%
+  mutate(pool = factor(pool, levels = c("4", "8", "13", "26", "LG", "OR"))) %>%
+  arrange(pool)
 pairwise.prop.test(x = summary_pool$wood, n = summary_pool$npoints, 
                    p.adjust.method = "bonferroni")
 
@@ -123,8 +126,9 @@ row.names(summary_stratum) <- NULL
 chisq.test(summary_stratum[,c("wood", "nowood")])
 
 # Post-hoc test with Bonferroni correction
-pairwise.prop.test(x = summary_pool$wood, n = summary_pool$npoints, 
+pairwise.prop.test(x = summary_stratum$wood, n = summary_stratum$npoints, 
                    p.adjust.method = "bonferroni")
+unique(summary_stratum$stratum)
 
 # Plot of proportions and confidence intervals by stratum
 summary_stratum %>% ggplot(aes(x = stratum, y = propwood))+
