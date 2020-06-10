@@ -22,11 +22,16 @@ source("../R_scripts/libraries.R")
 upper <- read.table("../data/inputs/DataSets_7_7_upper/AttributeTables/sites_p4p8p13.txt", sep = ",", stringsAsFactors = FALSE)
 names(upper) <- as.character(upper[1,]) # set appropriate col names
 upper <- upper[-1,]
-
 # fish data
 #ltrm_fish_data_upper <- read.csv("../data/inputs/DataSets_7_7_upper/ltrm_fish_data_EF.csv", as.is = TRUE, stringsAsFactors = FALSE)
 #save(ltrm_fish_data_upper, file = "../data/outputs/ltrm_fish_data_upper.Rda") # save as Rda so it loads quicker
 load("../data/outputs/ltrm_fish_data_upper.Rda") # load Rda
+```
+
+### Investigate snag NA's
+```{r}
+bad <- upper %>% filter(is.na(snag))
+nrow(bad) # there are already 540 NA's this early.
 ```
 
 ## Prepare data
@@ -58,6 +63,23 @@ names(upper)
 locate.nas(ltrm_fish_data_upper)
 locate.nas(fish_tojoin)
 locate.nas(upper) # the question remains: why are there NA's for snag?
+```
+
+### Investigate snag NA's
+```{r}
+upper %>% filter(is.na(snag)) %$% table(summary) # plenty of the snag NA's have summary != (1 or 2). 
+
+bad <- upper %>% filter(is.na(snag))
+bad %>% ggplot(aes(x = zone15e, y = zone15n)) +
+  geom_point() # the NA's seem to be spread across pools
+
+bad %$% table(pool) # ok, they're only in the upper river
+bad %$% table(stratum) # NA's are spread across strata as well. 
+
+names(bad)
+year <- str_extract(bad$sdate, "[\\d]{4}(?=\\s0)")
+
+table(year) # distributed across years, although there are more in the earlier years. 
 ```
 
 ## Clean
@@ -153,6 +175,13 @@ lower <- lower[-1,]
 load("../data/outputs/ltrm_fish_data_lower.Rda") # load Rda
 ```
 
+### Investigate snag NA's
+```{r}
+bad <- lower %>% filter(is.na(snag))
+nrow(bad)
+```
+
+
 ## Prepare data
 ```{r row-id-lower}
 # Add a row id column to the fish data. We know that the row number of ltrm_fish_data is equivalent to RowID in ltrm_fish_sites, and to RowID_ in sites_p26ilror (aka lower). Since ltrm_fish_sites isn't coming into play here, let's just add a column called Field1 in ltrm_fish_data and change RowID_ in lower to Field1 as well
@@ -186,6 +215,17 @@ locate.nas(ltrm_fish_data_lower)
 locate.nas(fish_tojoin)
 locate.nas(lower) # the question remains: why are there NA's for snag?
 ```
+
+### Investigate snag NA's
+```{r}
+bad <- lower %>% filter(is.na(snag))
+bad$summary
+
+table(bad$stratum)
+table(bad$pool)
+table(bad$sdate)
+```
+
 
 ## Clean
 ```{r fix-coords-lower}
