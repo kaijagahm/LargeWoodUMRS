@@ -27,3 +27,7 @@
 
 # Manuscript
 *.docx
+
+# Large discharge data
+All_UMR_Discharge_1975-2018_LWD.xlsx
+pools_discharge_1975_2018.csv
