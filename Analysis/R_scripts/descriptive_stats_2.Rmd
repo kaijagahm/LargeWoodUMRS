@@ -37,8 +37,8 @@ sites_upperlower %>% filter(is.na(snag) | is.na(pool)) # good!
 ## Compare to old data
 ### Load old data
 ```{r load-old}
-load("~/Downloads/all_reduced_clean.Rda")
-load("~/Downloads/all2_reduced_clean.Rda")
+load("../data/outputs/all_reduced_clean.Rda")
+load("../data/outputs/all2_reduced_clean.Rda")
 
 # rename data
 old_upper <- all_reduced_clean

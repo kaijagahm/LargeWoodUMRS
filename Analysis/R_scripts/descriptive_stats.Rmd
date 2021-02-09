@@ -56,8 +56,8 @@ The numbers above are just slightly _higher_ than the ones in the manuscript. Pa
 
 Load old data to verify it against the current data
 ```{r}
-load("~/Downloads/all_reduced_clean.Rda")
-load("~/Downloads/all2_reduced_clean.Rda")
+load("../data/outputs/all_reduced_clean.Rda")
+load("../data/outputs/all2_reduced_clean.Rda")
 
 # rename data
 old_upper <- all_reduced_clean
@@ -151,7 +151,7 @@ missing_from_new %>% filter(barcode %in% troublesome_barcodes)
 
 # Next step is to go back through the data pipeline and see if they were classified as OR1 in the original data, or if they somehow got changed from OR2 to OR1. 
 # Ok, in the original fish data, these were classified as OR, not OR1 or OR2. When the aa dataset got joined in, they were given the classification OR1, and were thus excluded.
-# Lookin at missing_from_new now (which is derived from the old data), we see that despite "pool" being listed as OR2, the uniq_id shows these observations as belonging to OR1. Thus, I'm going to conclude that the OR2 in the old data was a mistake, and that these observations are supposed to be part of OR1. Therefore, it was correct to exclude them from the new data, so nothing is wrong here.
+# Looking at missing_from_new now (which is derived from the old data), we see that despite "pool" being listed as OR2, the uniq_id shows these observations as belonging to OR1. Thus, I'm going to conclude that the OR2 in the old data was a mistake, and that these observations are supposed to be part of OR1. Therefore, it was correct to exclude them from the new data, so nothing is wrong here.
 
 # I have now investigated all observations that were present in the old data but are missing from the new data. Now time to do the other side: observations present in the new data that were missing from the old data.
 ```
