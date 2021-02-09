@@ -12,17 +12,17 @@ knitr::opts_chunk$set(echo = TRUE)
 # Setup
 ## Libraries
 ```{r echo = FALSE}
-source("libraries.R")
+source(here("Analysis", "R_scripts", "libraries.R"))
 ```
 
 ## Data
 ```{r}
-load("../data/outputs/summary_all.Rda")
-load("../data/outputs/summary_pool.Rda")
-load("../data/outputs/summary_poolyearstratum.Rda")
-load("../data/outputs/summary_stratum.Rda")
-load("../data/outputs/summary_stratumpool.Rda")
-load("../data/outputs/summary_yearpool.Rda")
+load(here("Analysis", "data", "outputs", "summary_all.Rda"))
+load(here("Analysis", "data", "outputs", "summary_pool.Rda"))
+load(here("Analysis", "data", "outputs", "summary_poolyearstratum.Rda"))
+load(here("Analysis", "data", "outputs", "summary_stratum.Rda"))
+load(here("Analysis", "data", "outputs", "summary_stratumpool.Rda"))
+load(here("Analysis", "data", "outputs", "summary_yearpool.Rda"))
 
 summary_pool
 ```
@@ -359,7 +359,7 @@ summary_poolyearstratum %>%
 # Exploring discharge data
 ```{r}
 # load
-dis <- read.csv("../data/inputs/pools_discharge_1975_2018.csv", as.is = T)
+dis <- read.csv(here("Analysis", "data", "inputs", "pools_discharge_1975_2018.csv"), as.is = T)
 
 # clean up
 dis <- dis %>%
