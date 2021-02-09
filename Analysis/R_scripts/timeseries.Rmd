@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Setup
 ## Libraries
 ```{r echo = FALSE}
+library(here)
 source(here("Analysis", "R_scripts", "libraries.R"))
 ```
 

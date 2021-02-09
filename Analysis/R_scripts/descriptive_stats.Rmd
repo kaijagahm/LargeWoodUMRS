@@ -11,15 +11,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Source libraries and functions
 ```{r echo = F, message = F}
-source("../R_scripts/libraries.R")
-source("../R_scripts/ownfunctions.R")
+library(here)
+source(here("Analysis", "R_scripts", "libraries.R"))
+source(here("Analysis", "R_scripts", "ownfunctions.R"))
 ```
 
 # Load data (combined upper/lower river)
 ```{r}
-load("../data/outputs/sites_upperlower.Rda")
-load("../data/outputs/sites_ur.Rda")
-load("../data/outputs/sites_lr.Rda")
+load(here("Analysis", "data", "outputs", "sites_upperlower.Rda"))
+load(here("Analysis", "data", "outputs", "sites_ur.Rda"))
+load(here("Analysis", "data", "outputs", "sites_lr.Rda"))
 ```
 
 # Data Cleaning
@@ -56,8 +57,8 @@ The numbers above are just slightly _higher_ than the ones in the manuscript. Pa
 
 Load old data to verify it against the current data
 ```{r}
-load("../data/outputs/all_reduced_clean.Rda")
-load("../data/outputs/all2_reduced_clean.Rda")
+load(here("Analysis", "data", "outputs", "all_reduced_clean.Rda"))
+load(here("Analysis", "data", "outputs", "all2_reduced_clean.Rda"))
 
 # rename data
 old_upper <- all_reduced_clean
@@ -126,7 +127,7 @@ diffs_df # okay, looking at the leftover_problems column, we have a couple negat
 # Investigation of obs. present in old, missing from new
 ```{r}
 # Load pseudoshoreline data
-load("../data/outputs/ps_upperlower.Rda")
+load(here("Analysis", "data", "outputs", "ps_upperlower.Rda"))
 
 # get missing data each way
 missing_from_new <- old_upperlower %>% filter(!(barcode %in% sites_upperlower$barcode))
@@ -373,12 +374,12 @@ summary_poolyearstratum %>% filter(pool == "P04", stratum == "BWC-S") %>%
 
 ### Save summaries
 ```{r}
-save(summary_poolyearstratum, file = "../data/outputs/summary_poolyearstratum.Rda")
-save(summary_all, file = "../data/outputs/summary_all.Rda")
-save(summary_pool, file = "../data/outputs/summary_pool.Rda")
-save(summary_yearpool, file = "../data/outputs/summary_yearpool.Rda")
-save(summary_stratum, file = "../data/outputs/summary_stratum.Rda")
-save(summary_stratumpool, file = "../data/outputs/summary_stratumpool.Rda")
+save(summary_poolyearstratum, file = here("data", "outputs", "summary_poolyearstratum.Rda"))
+save(summary_all, file = here("Analysis", "data", "outputs", "summary_all.Rda"))
+save(summary_pool, file = here("Analysis", "data", "outputs", "summary_pool.Rda"))
+save(summary_yearpool, file = here("Analysis", "data", "outputs", "summary_yearpool.Rda"))
+save(summary_stratum, file = here("Analysis", "data", "outputs", "summary_stratum.Rda"))
+save(summary_stratumpool, file = here("Analysis", "data", "outputs", "summary_stratumpool.Rda"))
 ```
 
 

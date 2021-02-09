@@ -40,6 +40,5 @@ library(DescTools)
 library(segmented) # for time series
 library(cpm) # for time series
 library(trend) # for time series
-library(here) # for easier file paths
 library(magrittr)
 
