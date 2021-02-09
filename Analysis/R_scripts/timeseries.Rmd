@@ -44,21 +44,22 @@ summary_yearpool %>% ggplot(aes(x = as.numeric(year), y = propwood))+
 head(summary_yearpool)
 summary_yearpool <- summary_yearpool %>% mutate(year = as.numeric(year))
 
-stats <- summary_yearpool %>% group_by(pool) %>% summarize(changepoint = pettitt.test(propwood)$estimate[1],
-                                                           changepoint2 = pettitt.test(propwood)$estimate[2],
-                                                           u_stat = pettitt.test(propwood)$statistic,
-                                                           pt_pval = round(pettitt.test(propwood)$p.value, 3),
-                                                           changeyear = year[changepoint] + 0.5,
-                                                           changeyear2 = year[changepoint2] + 0.5,
-                                                           mk_z = round(mk.test(propwood)$statistic, 3),
-                                                           mk_pval = round(mk.test(propwood)$p.value, 3),
-                                                           begyear = min(year),
-                                                           endyear = max(year),
-                                                           mn1 = round(mean(propwood[1:changepoint]), 3),
-                                                           mn2 = round(mean(propwood[(changepoint + 1):n()]), 3),
-                                                           mn_overall = round(mean(propwood), 3),
-                                                           slope_coef = coef(lm(propwood ~ year))[2],
-                                                           intercept_coef = coef(lm(propwood ~ year))[1])
+stats <- summary_yearpool %>% group_by(pool) %>% 
+  summarize(changepoint = pettitt.test(propwood)$estimate[1],
+            changepoint2 = pettitt.test(propwood)$estimate[2],
+            u_stat = pettitt.test(propwood)$statistic,
+            pt_pval = round(pettitt.test(propwood)$p.value, 3),
+            changeyear = year[changepoint] + 0.5,
+            changeyear2 = year[changepoint2] + 0.5,
+            mk_z = round(mk.test(propwood)$statistic, 3),
+            mk_pval = round(mk.test(propwood)$p.value, 3),
+            begyear = min(year, na.rm = T),
+            endyear = max(year, na.rm = T),
+            mn1 = round(mean(propwood[1:changepoint]), 3),
+            mn2 = round(mean(propwood[(changepoint + 1):n()]), 3),
+            mn_overall = round(mean(propwood), 3),
+            slope_coef = coef(lm(propwood ~ year))[2],
+            intercept_coef = coef(lm(propwood ~ year))[1])
 stats
 
 # this table shows results of the pettitt test and the mk test for the _overall_ dataset. It does not yet include trend analyses for subsections if a breakpoint was found.
@@ -68,8 +69,13 @@ stats
 
 ### Add regression coefficients to stats
 ```{r}
-stats <- stats
-i <- 1
+stats <- stats %>%
+  mutate(slope_1 = NA,
+         intercept_1 = NA,
+         slope_2 = NA,
+         intercept_2 = NA,
+         mkp1 = NA,
+         mkp2 = NA)
 # Set stats vals to NA if not significant
 for(i in 1:nrow(stats)){
   # pre- and post-changepoint regressions
@@ -95,28 +101,27 @@ for(i in 1:nrow(stats)){
   }else{
     stats[i, "mn_overall"] <- NA # if the p val is significant, set the overall mean to NA.
   }
-  if(stats$mk_pval[i] >= 0.05){ # if the mk test is non-significant...
-    stats[i, c("slope_coef", "intercept_coef")] <- NA
+  if(stats$mk_pval[i] >= 0.05){ # if the overall mk test is non-significant...
+    stats[i, c("slope_coef", "intercept_coef")] <- NA # set the linear regression values to NA
   }
-  if(stats$mkp1[i] >= 0.05){
-    stats[i, c("slope_1", "intercept_1")] <- NA
+  if(stats$mkp1[i] >= 0.05){ # if the first-period mk test is non-significant...
+    stats[i, c("slope_1", "intercept_1")] <- NA # set the first-period linear regression values to NA
   }
-  if(stats$mkp2[i] >= 0.05){
-    stats[i, c("slope_2", "intercept_2")] <- NA
+  if(stats$mkp2[i] >= 0.05){ # if the second-period mk test is non-significant...
+    stats[i, c("slope_2", "intercept_2")] <- NA # set the second-period linear regression values to NA.
   } 
 }
 
+# Use the first and second linear regression values to compute y values at the ends of each regression segment
 stats <- stats %>%
   mutate(ybeg_1 = slope_1*begyear + intercept_1,
          yend_1 = slope_1*changeyear + intercept_1,
          ybeg_2 = slope_2*changeyear + intercept_2,
          yend_2 = slope_2*endyear + intercept_2)
-
-head(stats)
 ```
 
 
-# Make plots (facetted)
+### Make plots (facetted)
 ```{r, warning = FALSE}
 summary_yearpool %>%
   ggplot(aes(x = year, y = propwood))+
@@ -143,225 +148,329 @@ summary_yearpool %>%
                col = "black", lwd = 1.5) # regression 2
 ```
 
-
-
-
-
-### Make plots (cowplot)
-```{r}
-## FUNCTION TO CONSTRUCT GGPLOT for a given dataset
-plotfun <- function(pooldata, stats){ 
-  
-  # DEFINE THE CURRENT POOL
-  if(length(unique(pooldata$pool)) == 1){
-    current_pool <- pooldata$pool[1]
-  }else{
-    stop('This data set contains data from more than one pool. Make sure to subset first!')
-  }
-  
-  # GET STATS FOR THIS POOL
-  current_stats <- stats %>% filter(pool == current_pool) %>% droplevels() %>% as.list() #subset the stats data frame
-  
-  # IF BREAKPOINT, TEST FOR LINEAR TRENDS BEFORE/AFTER BREAKPOINT
-  if(current_stats$pt_pval < 0.05){ # if there is a significant breakpoint...
-    mk1 <- mk.test(pooldata$propwood[1:current_stats$changepoint]) # test first part
-    mk2 <- mk.test(pooldata$propwood[(current_stats$changepoint + 1):nrow(pooldata)]) # test second part
-    
-    mkp1 <- mk1$p.value # get first p value
-    mkp2 <- mk2$p.value # get second p value
-  }else{
-    mkp1 <- NA # no p-value if we didn't fit the model
-    mkp2 <- NA # no p-value if we didn't fit the model
-  }
-  
-  # MAKE PLOT, WITH CONDITIONAL LAYERS
-  p <- ggplot(aes(x = year, y = propwood), data = pooldata)+
-    ggtitle(current_pool)+
-    {if(current_stats$pt_pval < 0.05)geom_vline(xintercept = current_stats$changeyear,
-                                                col = "red",
-                                                lty = 2)}+ # add red line for breakpoint
-    {if(current_stats$pt_pval < 0.05)geom_vline(xintercept = current_stats$changeyear2,
-                                                col = "red",
-                                                lty = 2)}+
-    {if(current_stats$pt_pval < 0.05)geom_segment(aes(x = current_stats$begyear,
-                                                      y = current_stats$mn1,
-                                                      xend = current_stats$changeyear - 0.5,
-                                                      yend = current_stats$mn1),
-                                                  col = "darkgrey",
-                                                  lty = 2)} + # add first mean
-    {if(current_stats$pt_pval < 0.05)geom_segment(aes(x = current_stats$changeyear + 0.5,
-                                                      y = current_stats$mn2,
-                                                      xend = current_stats$endyear,
-                                                      yend = current_stats$mn2),
-                                                  col = "darkgrey",
-                                                  lty = 2)}+ # add second mean
-    {if(current_stats$mk_pval < 0.05)geom_smooth(method = "lm", 
-                                                 se = FALSE, 
-                                                 col = "black",
-                                                 lwd = 0.5)}+
-    {if(current_stats$pt_pval >= 0.05 & 
-        current_stats$mk_pval >= 0.05)geom_segment(aes(x = current_stats$begyear,
-                                                       y = mean(propwood),
-                                                       xend = current_stats$endyear,
-                                                       yend = mean(propwood)),
-                                                   col = "darkgrey",
-                                                   lty = 2)}+ # add a plain mean if neither test is sig.
-    {if(!is.na(mkp1) & 
-        mkp1 < 0.05)geom_smooth(data = pooldata[1:current_stats$changepoint,],
-                                method = "lm",
-                                se = F,
-                                col = "black")}+
-    {if(!is.na(mkp2) & 
-        mkp2 < 0.05)geom_smooth(data = pooldata[(current_stats$changepoint + 1):nrow(pooldata),],
-                                method = "lm",
-                                se = F,
-                                col = "black")}+
-    geom_point(size = 0.75)+
-    theme(axis.title.x = element_blank(),
-          axis.title.y = element_blank())+
-    theme_minimal()
-    return(p)
-}
-
-pools <- summary_yearpool$pool %>% unique() # get a vector of unique pools
-
-pool_plots <- vector(mode = "list", length = length(pools))
-
-for(i in 1:length(pools)){ # loop through the pools to make plots
-  subset <- summary_yearpool %>% filter(pool == pools[i])
-  pt <- plotfun(pooldata = subset, stats = stats)
-  pool_plots[[i]] <- pt
-}
-
-pools <- cowplot::plot_grid(plotlist = pool_plots)
-pools
-#ggsave(pools, filename = "../data/outputs/pools_plots.png", width = 11, height = 6)
-```
-
 ## By aquatic areas
 ### Tests on each aquatic area within each pool
 #### Calculate stats
 ```{r}
-head(summary_poolyearstratum)
+summary_poolyearstratum
 summary_poolyearstratum <- summary_poolyearstratum %>% mutate(year = as.numeric(year))
+
 
 stats_stratum <- summary_poolyearstratum %>% 
   group_by(pool, stratum) %>%
   filter(n() >= 3) %>%
-  summarize(changepoint = pettitt.test(propwood)$estimate[1], # first changepoint if more than one
+  summarize(changepoint = pettitt.test(propwood)$estimate[1],
             changepoint2 = pettitt.test(propwood)$estimate[2],
-            u_stat = pettitt.test(propwood)$statistic[1],
-            pt_pval = round(pettitt.test(propwood)$p.value[1], 3),
+            u_stat = pettitt.test(propwood)$statistic,
+            pt_pval = round(pettitt.test(propwood)$p.value, 3),
             changeyear = year[changepoint] + 0.5,
             changeyear2 = year[changepoint2] + 0.5,
             mk_z = round(mk.test(propwood)$statistic, 3),
             mk_pval = round(mk.test(propwood)$p.value, 3),
-            begyear = min(year),
-            endyear = max(year),
+            begyear = min(year, na.rm = T),
+            endyear = max(year, na.rm = T),
             mn1 = round(mean(propwood[1:changepoint]), 3),
-            mn2 = round(mean(propwood[(changepoint + 1):n()]), 3)) 
+            mn2 = round(mean(propwood[(changepoint + 1):n()]), 3),
+            mn_overall = round(mean(propwood), 3),
+            slope_coef = coef(lm(propwood ~ year))[2],
+            intercept_coef = coef(lm(propwood ~ year))[1])
   
 stats_stratum
 ```
 
-#### Plot for each
+#### Edit stats
 ```{r}
-plotfun_strata <- function(poolstratumdata, stats){
-  
-}
-
-
-
-plotfun_strata <- function(poolstratumdata, stats){
-  # Define the current pool
-  if(length(unique(poolstratumdata$pool)) == 1){
-    current_pool <- poolstratumdata$pool[1]
-  }else{
-    stop('This data set contains data from more than one pool. Make sure to subset first!')
-  }
-  
-   # Define the current stratum
-  if(length(unique(poolstratumdata$stratum)) == 1){
-    current_stratum <- poolstratumdata$stratum[1]
-  }else{
-    stop('This data set contains data from more than one stratum. Make sure to subset first!')
-  }
-  
-  # Get stats for this pool and stratum
-  current_stats <- stats %>% 
-    filter(pool == current_pool, stratum == current_stratum) %>%
-    droplevels() %>% as.list() # subset the stats data frame
-  
-  # If breakpoint, test for linear trends before/after breakpoint
-  if(current_stats$pt_pval < 0.05){ # if there is a significant breakpoint...
-    mk1 <- mk.test(poolstratumdata$propwood[1:current_stats$changepoint]) # test first part
-    mk2 <- mk.test(poolstratumdata$propwood[(current_stats$changepoint + 1):nrow(poolstratumdata)]) # test second part
-    
-    mkp1 <- mk1$p.value # get first p value
-    mkp2 <- mk2$p.value # get second p value
-  }else{
-    mkp1 <- NA # no p-value if we didn't fit the model
-    mkp2 <- NA # no p-value if we didn't fit the model
-  }
-  
-  # Make plot, with conditional layers
-  p <- ggplot(aes(x = year, y = propwood), data = poolstratumdata)+
-    ggtitle(paste(current_pool, current_stratum))+
-    {if(current_stats$pt_pval < 0.05)geom_vline(xintercept = current_stats$changeyear,
-                                                col = "red",
-                                                lty = 2)}+ # add red line for breakpoint
-    {if(current_stats$pt_pval < 0.05)geom_segment(aes(x = current_stats$begyear,
-                                                      y = current_stats$mn1,
-                                                      xend = current_stats$changeyear - 0.5,
-                                                      yend = current_stats$mn1),
-                                                  col = "darkgrey",
-                                                  lty = 2)} + # add first mean
-    {if(current_stats$pt_pval < 0.05)geom_segment(aes(x = current_stats$changeyear + 0.5,
-                                                      y = current_stats$mn2,
-                                                      xend = current_stats$endyear,
-                                                      yend = current_stats$mn2),
-                                                  col = "darkgrey",
-                                                  lty = 2)}+ # add second mean
-    {if(current_stats$mk_pval < 0.05)geom_smooth(method = "lm", 
-                                                 se = FALSE, 
-                                                 col = "black",
-                                                 lwd = 0.5)}+
-    {if(current_stats$pt_pval >= 0.05 & 
-        current_stats$mk_pval >= 0.05)geom_segment(aes(x = current_stats$begyear,
-                                                       y = mean(propwood),
-                                                       xend = current_stats$endyear,
-                                                       yend = mean(propwood)),
-                                                   col = "darkgrey",
-                                                   lty = 2)}+ # add a plain mean if neither test is sig.
-    {if(!is.na(mkp1) & 
-        mkp1 < 0.05)geom_smooth(data = poolstratumdata[1:current_stats$changepoint,],
-                                method = "lm",
-                                se = F,
-                                col = "black")}+
-    {if(!is.na(mkp2) & 
-        mkp2 < 0.05)geom_smooth(data = poolstratumdata[(current_stats$changepoint + 1):nrow(poolstratumdata),],
-                                method = "lm",
-                                se = F,
-                                col = "black")}+
-    geom_point(size = 0.75)+
-    theme(axis.title.x = element_blank(),
-          axis.title.y = element_blank())
-    return(p)
-}
-
-# get unique combos of pools and strata
-poolstrata <- stats_stratum %>%
-  dplyr::select(pool, stratum) %>%
-  distinct()
-
-plots_list <- vector(mode = "list", length = nrow(poolstrata))
-for(i in 1:nrow(poolstrata)){ # loop through the pool/stratum combos
-  subset <- summary_poolyearstratum %>% filter(pool == poolstrata$pool[i], stratum == poolstrata$stratum[i])
-  pt <- plotfun_strata(poolstratumdata = subset, stats = stats_stratum)
-  plots_list[[i]] <- pt
-}
-
-strata_plots <- cowplot::plot_grid(plotlist = plots_list)
-ggsave(strata_plots, filename = "../data/outputs/strata_plots.png", width = 11, height = 7)
+stats_stratum <- stats_stratum %>%
+  mutate(slope_1 = NA,
+         intercept_1 = NA,
+         slope_2 = NA,
+         intercept_2 = NA,
+         mkp1 = NA,
+         mkp2 = NA,
+         fstat_1 = NA,
+         r2adj_1 = NA,
+         fstat_2 = NA,
+         r2adj_2 = NA)
+i <- 1
+head(subdat_1)
 ```
+
+```{r}
+for(i in 1:nrow(stats_stratum)){
+  # pre- and post-changepoint regressions
+  ## pre
+  subdat_1 <- summary_poolyearstratum %>% 
+    filter(pool == stats_stratum$pool[i]) %>%  # select current pool
+    filter(year >= stats_stratum$begyear[i] & year <= stats_stratum$changeyear[i]) %>% # select years before the changepoint
+    filter(stratum == stats_stratum$stratum[i])
+  
+  stats_stratum$slope_1[i] <- coef(lm(propwood ~ year, data = subdat_1))[2] # slope for pre-changepoint regression
+  stats_stratum$intercept_1[i] <- coef(lm(propwood ~ year, data = subdat_1))[1] # intercept for pre-changepoint regression
+  stats_stratum$fstat_1[i] <- summary(lm(propwood ~ year, data = subdat_1))$fstatistic[1]
+# F-statistic for pre-changepoint regression
+  stats_stratum$r2adj_1[i] <- summary(lm(propwood ~ year, data = subdat_1))$adj.r.squared # adjusted r-squared for pre-changepoint regression
+  stats_stratum$mkp1[i] <- round(mk.test(subdat_1$propwood)$p.value, 3)
+  
+  ## post
+  subdat_2 <- summary_poolyearstratum %>% 
+    filter(pool == stats_stratum$pool[i]) %>%  # select current pool
+    filter(year >= stats_stratum$changeyear[i] & year <= stats_stratum$endyear[i]) %>% # select years after the changepoint
+    filter(stratum == stats_stratum$stratum[i])
+  
+  stats_stratum$slope_2[i] <- coef(lm(propwood ~ year, data = subdat_2))[2] # slope for post-changepoint regression
+  stats_stratum$intercept_2[i] <- coef(lm(propwood ~ year, data = subdat_2))[1] # intercept for post-changepoint regression
+  stats_stratum$fstat_2[i] <- summary(lm(propwood ~ year, data = subdat_2))$fstatistic[1] # F-statistic for post-changepoint regression
+  stats_stratum$r2adj_2[i] <- summary(lm(propwood ~ year, data = subdat_2))$adj.r.squared # adjusted r-squared for pre-changepoint regression
+  stats_stratum$mkp2[i] <- round(mk.test(subdat_2$propwood)$p.value, 3)
+}
+
+
+  # if(stats_stratum$pt_pval[i] >= 0.05){ # if the changepoint is non-significant...
+  #   stats_stratum[i,c("changepoint", "changepoint2", "changeyear", "changeyear2", "mn1", "mn2", "slope_1", "intercept_1", "slope_2", "intercept_2", "mkp1", "mkp2")] <- NA # set the changepoints, changeyears, means, and everything relating to the first- and second-period regressions to NA 
+  # }else{
+  #   stats_stratum[i, "mn_overall"] <- NA # if the p val is significant, set the overall mean to NA.
+  # }
+  # if(stats_stratum$mk_pval[i] >= 0.05){ # if the overall mk test is non-significant...
+  #   stats_stratum[i, c("slope_coef", "intercept_coef")] <- NA # set the linear regression values to NA
+  # }
+  # if(!is.na(stats_stratum$mkp1[i]) & stats_stratum$mkp1[i] >= 0.05){ # if the first-period mk test is non-significant...
+  #   stats_stratum[i, c("slope_1", "intercept_1")] <- NA # set the first-period linear regression values to NA
+  # }
+  # if(!is.na(stats_stratum$mkp2[i]) & stats_stratum$mkp2[i] >= 0.05){ # if the second-period mk test is non-significant...
+  #   stats_stratum[i, c("slope_2", "intercept_2")] <- NA # set the second-period linear regression values to NA.
+  # } 
+
+
+
+# Use the first and second linear regression values to compute y values at the ends of each regression segment
+stats_stratum <- stats_stratum %>%
+  mutate(ybeg_1 = slope_1*begyear + intercept_1,
+         yend_1 = slope_1*changeyear + intercept_1,
+         ybeg_2 = slope_2*changeyear + intercept_2,
+         yend_2 = slope_2*endyear + intercept_2)
+
+
+# View the stats needed for Table S4.
+stats_stratum %>%
+  filter(pt_pval <= 0.05) %>% # only significant breakpoints
+  dplyr::select(pool, stratum, begyear, changeyear, fstat_1, fstat_2, mkp1, mkp2, r2adj_1, r2adj_2) %>%
+  mutate(fstat_1 = case_when(mkp1 <= 0.05 ~ fstat_1), # only significant trend lines
+         fstat_2 = case_when(mkp2 <= 0.05 ~ fstat_2),
+         r2adj_1 = case_when(mkp1 <= 0.05 ~ r2adj_1),
+         r2adj_2 = case_when(mkp2 <= 0.05 ~ r2adj_2))
+```
+
+### Make plots (facetted and colored)
+```{r, warning = FALSE}
+# Partial regressions only
+summary_poolyearstratum %>%
+  ggplot(aes(x = year, y = propwood, col = stratum))+
+  geom_point(size = 1.5)+
+  facet_wrap(~pool)+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        text = element_text(size = 18))+
+  ylab("Proportion of sites with large wood")+
+  xlab("Year")+
+  geom_vline(data = stats_stratum, aes(xintercept = changeyear, col = stratum), lwd = 1, lty = 2, show.legend = F)+
+  #geom_abline(data = stats_stratum, aes(slope = slope_coef, intercept = intercept_coef, col = stratum),
+  #            lwd = 0.5, show.legend = F)+ #overall regression
+  #geom_segment(data = stats_stratum, aes(x = begyear, y = mn1, xend = changeyear, yend = mn1, col = stratum), lty = 2)+ # mean 1 
+  #geom_segment(data = stats_stratum, aes(x = changeyear, y = mn2, xend = endyear, yend = mn2, col = stratum), lty = 2)+ # mean 2 
+  #geom_segment(data = stats_stratum, aes(x = begyear, y = mn_overall, xend = endyear, yend = mn_overall, col = stratum), lty = 2)+ # overall mean 
+  geom_segment(data = stats_stratum, aes(x = begyear, y = ybeg_1, xend = changeyear, yend = yend_1, col = stratum), lwd = 1, show.legend = F)+ # regression 1
+  geom_segment(data = stats_stratum, aes(x = changeyear, y = ybeg_2, xend = endyear, yend = yend_2, col = stratum), lwd = 1, show.legend = F)+ # regression 2
+  guides(color = guide_legend(override.aes = list(size = 2)))+
+  theme(legend.position = "bottom")+
+  scale_color_viridis_d()+
+  NULL
+
+# Overall regressions only
+summary_poolyearstratum %>%
+  ggplot(aes(x = year, y = propwood, col = stratum))+
+  geom_point(size = 1.5)+
+  facet_wrap(~pool)+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        text = element_text(size = 18))+
+  ylab("Proportion of sites with large wood")+
+  xlab("Year")+
+  geom_vline(data = stats_stratum, aes(xintercept = changeyear, col = stratum), lwd = 1, lty = 2, show.legend = F)+
+  geom_abline(data = stats_stratum, aes(slope = slope_coef, intercept = intercept_coef, col = stratum),
+              lwd = 1, show.legend = F)+ #overall regression
+  #geom_segment(data = stats_stratum, aes(x = begyear, y = mn1, xend = changeyear, yend = mn1, col = stratum), lty = 2)+ # mean 1 
+  #geom_segment(data = stats_stratum, aes(x = changeyear, y = mn2, xend = endyear, yend = mn2, col = stratum), lty = 2)+ # mean 2 
+  #geom_segment(data = stats_stratum, aes(x = begyear, y = mn_overall, xend = endyear, yend = mn_overall, col = stratum), lty = 2)+ # overall mean 
+  #geom_segment(data = stats_stratum, aes(x = begyear, y = ybeg_1, xend = changeyear, yend = yend_1, col = stratum), lwd = 0.5, show.legend = F)+ # regression 1
+  #geom_segment(data = stats_stratum, aes(x = changeyear, y = ybeg_2, xend = endyear, yend = yend_2, col = stratum), lwd = 0.5, show.legend = F)+ # regression 2
+  guides(color = guide_legend(override.aes = list(size = 2)))+
+  theme(legend.position = "bottom")+
+  scale_color_viridis_d()+
+  NULL
+```
+
+### Make plots (black and white)
+```{r, warning = FALSE}
+# Trend lines for portions of time series only
+summary_poolyearstratum %>%
+  ggplot(aes(x = year, y = propwood))+
+  geom_point(aes(shape = stratum))+
+  facet_wrap(~pool)+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        text = element_text(size = 18))+
+  ylab("Proportion of sites with large wood")+
+  xlab("Year")+
+  geom_vline(data = stats_stratum, aes(xintercept = changeyear, lty = stratum))+
+  #geom_abline(data = stats_stratum, aes(slope = slope_coef, intercept = intercept_coef, lty = stratum), lwd = 0.5, show.legend = FALSE)+ #overall regression
+  #geom_segment(data = stats_stratum, aes(x = begyear, y = mn1, xend = changeyear, yend = mn1, col = stratum), lty = 2)+ # mean 1 
+  #geom_segment(data = stats_stratum, aes(x = changeyear, y = mn2, xend = endyear, yend = mn2, col = stratum), lty = 2)+ # mean 2 
+  #geom_segment(data = stats_stratum, aes(x = begyear, y = mn_overall, xend = endyear, yend = mn_overall, col = stratum), lty = 2)+ 
+  geom_segment(data = stats_stratum, aes(x = begyear, y = ybeg_1, xend = changeyear, yend = yend_1, lty = stratum), lwd = 0.5, show.legend = FALSE)+ # regression 1
+  geom_segment(data = stats_stratum, aes(x = changeyear, y = ybeg_2, xend = endyear, yend = yend_2, lty = stratum), lwd = 0.5, show.legend = FALSE)+ # regression 2
+  theme(legend.position = "bottom")+
+  scale_linetype_manual(values = c("dashed", "dotted", "solid", "longdash"))+
+  scale_shape_manual(values = c(3, 4, 19, 1))+
+  NULL
+
+# Trend lines for entire time series only
+summary_poolyearstratum %>%
+  ggplot(aes(x = year, y = propwood))+
+  geom_point(aes(shape = stratum))+
+  facet_wrap(~pool)+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        text = element_text(size = 18))+
+  ylab("Proportion of sites with large wood")+
+  xlab("Year")+
+  geom_vline(data = stats_stratum, aes(xintercept = changeyear, lty = stratum))+
+  geom_abline(data = stats_stratum, aes(slope = slope_coef, intercept = intercept_coef, lty = stratum), lwd = 0.5, show.legend = FALSE)+ #overall regression
+  #geom_segment(data = stats_stratum, aes(x = begyear, y = mn1, xend = changeyear, yend = mn1, col = stratum), lty = 2)+ # mean 1 
+  #geom_segment(data = stats_stratum, aes(x = changeyear, y = mn2, xend = endyear, yend = mn2, col = stratum), lty = 2)+ # mean 2 
+  #geom_segment(data = stats_stratum, aes(x = begyear, y = mn_overall, xend = endyear, yend = mn_overall, col = stratum), lty = 2)+ 
+  #geom_segment(data = stats_stratum, aes(x = begyear, y = ybeg_1, xend = changeyear, yend = yend_1, lty = stratum), lwd = 1, show.legend = FALSE)+ # regression 1
+  #geom_segment(data = stats_stratum, aes(x = changeyear, y = ybeg_2, xend = endyear, yend = yend_2, lty = stratum), lwd = 1, show.legend = FALSE)+ # regression 2
+  theme(legend.position = "bottom")+
+  scale_linetype_manual(values = c("dashed", "dotted", "solid", "longdash"))+
+  scale_shape_manual(values = c(3, 4, 19, 1))+
+  NULL
+```
+
+# Exploring discharge data
+```{r}
+# load
+dis <- read.csv("../data/inputs/pools_discharge_1975_2018.csv", as.is = T)
+
+# clean up
+dis <- dis %>%
+  pivot_longer(., names_to = "pool", cols = c("P4", "P8", "P26", "P13", "OR", "LAG")) %>%
+  mutate(pool = fct_recode(factor(pool),
+                           "4" = "P4",
+                           "8" = "P8",
+                           "13" = "P13",
+                           "26" = "P26",
+                           "OR" = "OR",
+                           "LG" = "LAG")) %>%
+  rename(date = Dates) %>%
+  mutate(date = mdy(date)) %>%
+  mutate(year = year(date))
+
+# aggregate by year
+dis_year <- dis %>%
+  group_by(pool, year) %>%
+  summarize(meandis = mean(value, na.rm = T))
+
+head(summary_yearpool)
+
+# join wood data
+dis_year <- dis_year %>%
+  left_join(summary_yearpool, by = c("pool", "year")) %>%
+  filter(!is.na(propwood))
+
+head(dis_year)
+```
+
+### Relationship between mean discharge and proportion of sites with wood, broken down by pool
+```{r}
+dis_year %>%
+  ggplot(aes(x = meandis, y = propwood))+
+  geom_point()+
+  facet_wrap(~pool, scales = "free") # not initially seeing any pattern, except maybe in OR.
+
+dis_year %>%
+  ggplot(aes(x = meandis, y = propwood))+
+  geom_point()+
+  facet_wrap(~pool, scales = "free") +
+  geom_smooth(method = "lm") # Yeah, huh, that's kind of interesting. Essentially no pattern in any pool except OR. Maybe *slight* upward slopes in the other pools, but not at all significant.
+```
+
+### Discharge patterns over time
+```{r}
+# Just plot discharge over time
+dis_year %>%
+  ggplot(aes(x = year, y = meandis, col = pool))+
+  geom_line() # this is kind of interesting just by itself. I guess it makes sense--as you go down the river, the discharge gets higher, but the magnitude of the differences also changes.
+```
+
+### Standardized discharge
+```{r}
+# What about looking at discharge in terms of deviation from the mean for each pool? I.e. do extreme years relate to proportion of wood observed?
+dis_year <- dis_year %>%
+  group_by(pool) %>%
+  mutate(meandis_std = scale(meandis)) # scale centers the data around the mean
+
+# std discharge vs. propwood
+dis_year %>%
+  ggplot(aes(x = meandis_std, y = propwood))+
+  geom_point()+
+  facet_wrap(~pool)+
+  geom_smooth(method = "lm") # I guess this is kind of the same as what I did before, by just letting the x scales be free. Oops. What if I also standardize the y scales?
+
+```
+
+Standardized wood proportion
+```{r}
+# Standardizing the wood proportion
+dis_year <- dis_year %>%
+  group_by(pool) %>%
+  mutate(propwood_std = scale(propwood))
+
+# std discharge vs. std propwood
+dis_year %>%
+  ggplot(aes(x = meandis_std, y = propwood_std))+
+  geom_point()+
+  facet_wrap(~pool)+
+  geom_smooth(method = "lm") # yeah, that didn't really change things too much. 
+```
+
+Both vs. time
+```{r}
+# What about standardized wood proportion and standardized discharge both vs. year?
+dis_year %>%
+  ggplot(aes(x = year, y = propwood_std))+ # proportion of wood is black; discharge is red.
+  geom_line()+
+  facet_wrap(~pool)+
+  geom_line(aes(x = year, y = meandis_std), col = "red")
+```
+
+Wood vs. previous year's discharge?
+```{r}
+# add previous year's discharge
+dis_year <- dis_year %>%
+  group_by(pool) %>%
+  mutate(lagdis_std = lag(meandis_std))
+
+dis_year %>%
+  ggplot(aes(x = lagdis_std, y = propwood_std))+
+  geom_point()+
+  facet_wrap(~pool)+
+  geom_smooth(method = "lm") # meh, kind of inconclusive.
+  
+```
+
+
+
+
+
+
 
