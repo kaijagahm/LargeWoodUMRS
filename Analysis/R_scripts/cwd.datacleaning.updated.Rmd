@@ -19,25 +19,21 @@ source("libraries.R")
 # Upper River (4, 8, 13)
 ## Load data
 ```{r}
-load("../data/outputs/fish_data_EF.Rda") 
+load(here("Analysis", "data", "outputs", "fish_data_EF.Rda"))
 head(fish_data_EF)
   # Fish sampling data
 fish_data_EF <- fish_data_EF %>% mutate(fishdata_rownum = 1:nrow(fish_data_EF)) #number the rows
-sites_p4p8p13 <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_p4p8p13.txt") 
+sites_p4p8p13 <- read.csv(here("Analysis", "data", "inputs", "DataSets_7_7_upper", "AttributeTables", "sites_p4p8p13.txt")) 
   # reprojected data
-rivmi <- read.table("../data/inputs/p4p8p13_rivmile.txt", sep = ",", header = T) 
+rivmi <- read.table(here("Analysis", "data", "inputs", "p4p8p13_rivmile.txt"), sep = ",", header = T) 
   # river mile data
-sites_aa_5m <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_aquaareas5m.txt") 
-  # merged aquatic areas data for points buffered by 5 meters.
+sites_aa_5m <- read.csv(here("Analysis", "data", "inputs", "DataSets_7_7_upper", "AttributeTables", "sites_aquaareas5m.txt"))# merged aquatic areas data for points buffered by 5 meters.
+
 ## Environmental data
-sites_terrestrial <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_terrestrial.txt") 
-  # nearest terrestrial area info for each point
-terrestrial_forests <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/Terrestrial_Forests.txt") 
-  # info about terrestrial areas/forests
-sites_forest <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/sites_forest.txt") 
-  # nearest forest info for each point
-lc_2010 <- read.csv("../data/inputs/DataSets_7_7/AttributeTables/lc_2010.txt") 
-  # 2010 landcover info
+sites_terrestrial <- read.table(here("Analysis", "data", "inputs", "DataSets_7_7_upper", "AttributeTables", "sites_terrestrial.txt"), header = T, sep = ",") # nearest terrestrial area info for each point
+terrestrial_forests <- read.table(here("Analysis", "data", "inputs", "DataSets_7_7_upper", "AttributeTables", "Terrestrial_Forests.txt"), sep = ",", header = T)# info about terrestrial areas/forests
+sites_forest <- read.table(here("Analysis", "data", "inputs", "DataSets_7_7_upper", "AttributeTables", "sites_forest.txt"), sep = ",", header = T) # nearest forest info for each point
+lc_2010 <- read.table(here("Analysis", "data", "inputs", "DataSets_7_7_upper", "AttributeTables", "lc_2010.txt"), sep = ",", header = T)# 2010 landcover info
 ```
 
 ## Clean fish data
@@ -175,12 +171,6 @@ for(i in colstomodify){
 }                                   
 ```
 
-### Drop empty pools
-```{r}
-sites_ur$pool <- droplevels(sites_ur$pool)
-```
-
-
 ### Investigate NA's
 ```{r}
 locate.nas(sites_ur)
@@ -219,20 +209,24 @@ locate.nas(sites_ur)
 ## Load data
 ```{r}
 # Load files
-load("../data/inputs/DataSets_8_17/ltrm_fish_data_new.Rda") 
 # Fish sampling data - made by MVA 10/31/18 by importing csv "ltrm_fish_data.csv" and exporting as Rda. 11/26/19: KJGG could not find this file. Re-imported ltrm_fish_data.csv and saved as .Rda.
-#ltrm_fish_data <- read.csv("data/DataSets_8_17/ltrm_fish_data.csv",sep=",",header=TRUE)
- #save(ltrm_fish_data,file="data/DataSets_8_17/ltrm_fish_data_new.Rda")
-ltrm_fish_data <- ltrm_fish_data_new # This is the equivalent of fish_data_EF for the upper river.
+# ltrm_fish_data_new <- read.csv(here("Analysis", "data", "inputs", "DataSets_8_17_lower", "ltrm_fish_data.csv"), header = T)
+#  save(ltrm_fish_data_new, file=here("Analysis", "data", "inputs", "DataSets_8_17_lower", "ltrm_fish_data_new.Rda"))
+
+load(here("Analysis", "data", "inputs", "DataSets_8_17_lower", "ltrm_fish_data_new.Rda")) # This is the equivalent of fish_data_EF for the upper river.
+
 ltrm_fish_data <- ltrm_fish_data %>% mutate(fishdata_rownum = 1:nrow(ltrm_fish_data)) #number the rows
-sites_p26ilror <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_p26ilror.txt") # reprojected data. This is the equivalent of sites_p4p8p13
+
+sites_p26ilror <- read.table(here("Analysis", "data", "inputs", "DataSets_8_17_lower", "AttributeTables", "sites_p26ilror.txt"), header = T, sep = ",") # reprojected data. This is the equivalent of sites_p4p8p13.
 # I can't find an equivalent of the river miles file for the lower river. Do we have?
-sites_aa_5m <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_aquaareas5m2.txt") # merged aquatic areas data for points buffered by 5 meters.
+
+sites_aa_5m <- read.table(here("Analysis", "data", "inputs", "DataSets_8_17_lower", "AttributeTables", "sites_aquaareas5m2.txt"), header = T, sep = ",") # merged aquatic areas data for points buffered by 5 meters.
+
 ## Environmental data
-sites_terrestrial <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_terrestrial2.txt") # nearest terrestrial area info for each point
-terrestrial_forests <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/Terrestrial_Forests2.txt") # info about terrestrial areas/forests
-sites_forest <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/sites_forest2.txt") # nearest forest info for each point
-lc_2010 <- read.csv("../data/inputs/DataSets_8_17/AttributeTables/lc_20102.txt") # landcover info
+sites_terrestrial <- read.table(here("Analysis", "data", "inputs", "DataSets_8_17_lower", "AttributeTables", "sites_terrestrial2.txt"), header = T, sep = ",") # nearest terrestrial area info for each point
+terrestrial_forests <- read.table(here("Analysis", "data", "inputs", "DataSets_8_17_lower", "AttributeTables", "Terrestrial_Forests2.txt"), header = T, sep = ",") # info about terrestrial areas/forests
+sites_forest <- read.table(here("Analysis", "data", "inputs", "DataSets_8_17_lower", "AttributeTables", "sites_forest2.txt"), header = T, sep = ",") # nearest forest info for each point
+lc_2010 <- read.table(here("Analysis", "data", "inputs", "DataSets_8_17_lower", "AttributeTables", "lc_20102.txt"), header = T, sep = ",") # landcover info
 ```
 
 ## Clean fish data
@@ -360,11 +354,6 @@ for(i in colstomodify){
 }                         
 ```
 
-### Drop empty pools
-```{r}
-sites_lr$pool <- droplevels(sites_lr$pool)
-```
-
 ### Investigate NA's
 ```{r}
 locate.nas(sites_lr)
@@ -396,7 +385,7 @@ sites_lr <- sites_lr %>%
 
 ## Save data
 ```{r}
-save(sites_lr, file = "../data/outputs/sites_lr.Rda")
+#save(sites_lr, file = "../data/outputs/sites_lr.Rda")
 ```
 
 # __________________
@@ -506,17 +495,17 @@ sites_upperlower <- sites_upperlower %>%
 # Save psedoshoreline obs
 ```{r}
 ps_upperlower <- bind_rows(ps_ur, ps_lr)
-save(ps_upperlower, file = "../data/outputs/ps_upperlower.Rda")
+#save(ps_upperlower, file = "../data/outputs/ps_upperlower.Rda")
 ```
 
 
 ## Save data
 ```{r}
-save(sites_upperlower, file = "../data/outputs/sites_upperlower.Rda")
-save(sites_ur, file = "../data/outputs/sites_ur.Rda")
-save(sites_lr, file = "../data/outputs/sites_lr.Rda")
+#save(sites_upperlower, file = "../data/outputs/sites_upperlower.Rda")
+#save(sites_ur, file = "../data/outputs/sites_ur.Rda")
+#save(sites_lr, file = "../data/outputs/sites_lr.Rda")
 # As CSV's
-write.csv(sites_upperlower, "../data/outputs/sites_upperlower.csv", row.names = F)
-write.csv(sites_ur, "../data/outputs/sites_ur.csv", row.names = F)
-write.csv(sites_lr, "../data/outputs/sites_lr.csv", row.names = F)
+#write.csv(sites_upperlower, "../data/outputs/sites_upperlower.csv", row.names = F)
+#write.csv(sites_ur, "../data/outputs/sites_ur.csv", row.names = F)
+#write.csv(sites_lr, "../data/outputs/sites_lr.csv", row.names = F)
 ```
