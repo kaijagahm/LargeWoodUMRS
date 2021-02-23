@@ -1,4 +1,3 @@
-
 # Edited version of "datacleaning.clean.R" by Kaija Gahm, 11 Aug 2018 (p 4, 8, 13)
 # Edited version of "datacleaning.26ilror.clean.R" by Kaija Gahm, 20 Aug 2018 (p 26, ilr, or)
 # output: two .Rda files of cleaned data: 1) "all_reduced_clean.Rda" (p4,8,13) and 2) "all2_reduced_clean.Rda" (p26, ilr, or)
